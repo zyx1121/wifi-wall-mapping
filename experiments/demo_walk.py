@@ -1,18 +1,19 @@
 """Export a walk through the held-out apartment B for the web demo.
 
-One AP on the south wall of the living room. A client walks through every
-room, one position every 0.3 m. Each position gives one link. The demo plays
-the links in order and shows the walls that fuse_walk finds after each one.
-Walls follow ITU-R P.2040 with a fixed noise floor (stage 6). 4
-antennas, ideal hardware, known LoS length, NOMP.
+3 APs: in the living room, the kitchen and bedroom A, each on the middle of
+the room's longest outer wall (stage 9). A client walks through every room,
+one position every 0.3 m. Each position gives one link to every AP. The
+demo plays the links in order and shows the walls that the APs find.
+Walls follow ITU-R P.2040 with a fixed noise floor (stage 6). 4 antennas,
+ideal hardware, known LoS length, NOMP at 160 MHz.
 
-Every SNAP positions it also closes the rooms (stage 5), drops the false
-walls by their loss and fits the loss of each wall (stage 7), and predicts
-the received power over a grid.
+Every SNAP positions it also closes the rooms over the walls of all APs
+and fits the loss of each wall (stage 7, one offset per AP). It predicts the received power of the
+strongest AP over a grid.
 
-It runs the 3 walks of plan B at 160 and 320 MHz and exports the run with
-the most rooms (then the best room IoU). We tuned nothing on plan B,
-but the export is the best of 6 runs, not a typical one.
+The APs and the walk are the best plan B run of stage 9 (5 of 5 rooms).
+We tuned nothing on plan B, but the export is the best run, not a typical
+one. Stage 9 has the typical numbers.
 
 Writes demo/public/wall-mapping-assets/walk.json.
 
@@ -22,6 +23,7 @@ Writes demo/public/wall-mapping-assets/walk.json.
 from __future__ import annotations
 
 import json
+import pickle
 
 import common  # noqa: F401  (BLAS threads)
 
@@ -32,61 +34,54 @@ from common import ROOT, pool_map
 from wallmap.attenuation import crossings, excess_db, false_lines, fit_losses
 from wallmap.csi import measure
 from wallmap.estimators import ESTIMATORS, relative_params
-from wallmap.materials import WALLS
 from wallmap.floorplan import MATERIALS_B, apartment_b, line_id, walk
 from wallmap.fusion import Link, fuse_walk
-from wallmap.geometry import Array, image_paths, wall_line, walls_from_paths
+from wallmap.geometry import Array, image_paths, walls_from_paths
+from wallmap.materials import WALLS
+from wallmap.multi_ap import ap_sites, frame, label_segment, local_plan
 from wallmap.radiomap import plan_from_segments, rss_dbm
-from wallmap.rooms import close_rooms, score_rooms
+from wallmap.rooms import Segment, close_rooms, score_rooms
 
-AP = np.array([2.5, 0.1])
-BWS = [160, 320]
-SEEDS = [7000, 7001, 7002]
-EST = "nomp"
 ANTS = 4
-SNR_1M = {160: 51.0, 320: 48.0}
+BW = 160
+SNR_1M = 51.0
+SEED = 7002
+COMBO = (0, 1, 3)  # site index: living room, kitchen, bedroom A
 SNAP = 10
 CELL = 0.2  # room grid (m)
 HEAT = 0.3  # radio map grid (m), divides the plan size
+# The loss test of stage 7 drops false walls. Its 1.7 dB threshold comes from 1 AP on plan A.
+# With these 3 APs it also drops true walls (5 rooms become 2), so the demo keeps every wall.
+DROP = False
 OUT = ROOT / "demo" / "public" / "wall-mapping-assets" / "walk.json"
 
 PLAN = apartment_b().with_materials(MATERIALS_B)
-WALKS = {seed: walk(seed=seed, waypoints=PLAN.waypoints) for seed in SEEDS}
+POS = walk(seed=SEED, waypoints=PLAN.waypoints)
+SITES = [ap_sites(PLAN)[k] for k in COMBO]
+FRAMES = [frame(PLAN, s) for s in SITES]
+INNER = sorted({line_id(w.name) for w in PLAN.walls()} - {"south", "east", "north", "west"})
 
 
 def r2(v):
     return round(float(v), 2)
 
 
-def targets():
-    out = {}
-    for w in PLAN.walls():
-        out.setdefault(line_id(w.name), wall_line(AP, w))
-    return out
-
-
-TARGETS = targets()
-
-
-def label(th, rho):
-    for lid, (tt, tr) in TARGETS.items():
-        if abs((th - tt + np.pi) % (2 * np.pi) - np.pi) < np.deg2rad(10) and abs(rho - tr) < 0.5:
-            return lid
-    return None
-
-
 def estimate(args):
-    seed, i, bw = args
-    ap = Array(AP, n_ant=ANTS)
-    paths = image_paths(PLAN, ap, WALKS[seed][i], max_order=2)
+    """One link in the frame of AP j. Same noise seeds as stage 9."""
+    j, i = args
+    f = FRAMES[j]
+    ap = Array(f.to_local(SITES[j].pos), n_ant=ANTS)
+    paths = image_paths(local_plan(PLAN, f), ap, f.to_local(POS[i]), max_order=2)
     los = [q for q in paths if q.is_los][0]
-    y, n_k, s2 = measure(paths, ap, bw, 0.0, np.random.default_rng(i), snr_1m_db=SNR_1M[bw])
-    p = ESTIMATORS[EST](y, n_k, s2, ap.fc)
+    k = COMBO[j]
+    y, n_k, s2 = measure(paths, ap, BW, 0.0, np.random.default_rng(SEED * 1000 + i + 1 + 100_000 * k), snr_1m_db=SNR_1M)
+    p = ESTIMATORS["nomp"](y, n_k, s2, ap.fc)
     rel = relative_params(p)
-    # path lengths: ideal hardware keeps delays absolute
+    if rel is None:
+        rel = (np.pi / 2, np.zeros(0), np.zeros(0))
     found = [[r2(s), r2(t * 299_792_458.0)] for s, t in zip(p.s, p.tau)]
     exc = float(excess_db([p], [los.length], ap.wavelength)[0])
-    return rel, los.length, found, exc
+    return Link(rel[0], los.length, rel[1], rel[2]), found, exc
 
 
 def heat_grid():
@@ -111,24 +106,31 @@ def rle(values) -> list[int]:
     return out
 
 
-def fit(rm, pos, exc):
-    a = crossings(AP, pos, rm.closed, len(rm.walls))
-    return fit_losses(exc, a)
+def strongest(room, pts, max_order):
+    return np.max([rss_dbm(room, Array(s.pos, n_ant=ANTS), pts, max_order=max_order) for s in SITES], axis=0)
 
 
-def snapshot(fw, pos, exc, truth_heat):
-    """Rooms, wall losses and the radio map after the positions so far."""
-    n = len(pos)
-    rm = close_rooms(fw, pos)
-    if rm.closed:
+def fit(rm, pos, excs):
+    """Loss per wall line from the links of all APs, one offset per AP."""
+    a = np.vstack([crossings(s.pos, pos, rm.closed, len(rm.walls)) for s in SITES])
+    groups = np.repeat(np.arange(len(SITES)), len(pos))
+    return fit_losses(np.concatenate(excs), a, groups=groups)
+
+
+def snapshot(segs, n, excs, truth_heat):
+    """Rooms, wall losses and the radio map after the first n positions."""
+    pos = POS[:n]
+    excs = [e[:n] for e in excs]
+    rm = close_rooms(segs, pos)
+    if rm.closed and DROP:
         # stage 7: drop the wall lines that many links cross without loss
-        _, loss, count = fit(rm, pos, exc[:n])
+        _, loss, count = fit(rm, pos, excs)
         drop = set(false_lines(loss, count))
         keep = [s for i, s in enumerate(rm.walls) if i not in drop]
         if drop and keep:
             rm = close_rooms(keep, pos)
     score = score_rooms(rm, PLAN.boxes, PLAN.doors)
-    # for drawing only: paint the small empty cells inside rooms (between close parallel lines) with the room around them
+    # for drawing only: paint the empty cells inside rooms and the thin strips along walls
     lab = rm.labels.copy()
     holes = ndimage.binary_fill_holes(lab > 0) & (lab == 0)
     while holes.any():
@@ -138,7 +140,6 @@ def snapshot(fw, pos, exc, truth_heat):
             break
         lab[fill] = grown[fill]
         holes &= lab == 0
-    # and the thin unlabelled strips along the walls, up to 0.3 m wide
     for _ in range(3):
         grown = ndimage.grey_dilation(lab, size=3)
         fill = (lab == 0) & (grown > 0)
@@ -152,13 +153,11 @@ def snapshot(fw, pos, exc, truth_heat):
             labels.append(int(lab[i, j]) if ok else 0)
     losses = {}
     if rm.closed:
-        _, loss, _ = fit(rm, pos, exc[:n])
+        _, loss, _ = fit(rm, pos, excs)
         losses = {f"w{i}": float(loss[s.line]) for i, s in enumerate(rm.closed)}
     room = plan_from_segments(rm.closed, PLAN.width, PLAN.depth, losses=losses)
     _, _, pts = heat_grid()
-    heat = rss_dbm(room, Array(AP, n_ant=ANTS), pts, max_order=1)
-    x0, y0, x1, y1 = PLAN.boxes[0][1:]
-    other = ~((pts[:, 0] > x0) & (pts[:, 0] < x1) & (pts[:, 1] > y0) & (pts[:, 1] < y1))
+    heat = strongest(room, pts, 1)
     return {
         "n": n,
         "rooms": rle(labels),
@@ -166,30 +165,39 @@ def snapshot(fw, pos, exc, truth_heat):
         "iou": r2(score["mean_iou"]),
         "walls": [[r2(s.a[0]), r2(s.a[1]), r2(s.b[0]), r2(s.b[1])] for s in rm.closed],
         "heat": [int(round(v)) for v in heat],
-        "heat_err": r2(np.median(np.abs(heat - truth_heat)[other])),
+        "heat_err": r2(np.median(np.abs(heat - truth_heat))),
     }
 
 
-def fuse_all(args):
-    seed, bw, rels, truth_heat = args
-    pos = WALKS[seed]
-    exc = np.array([e for *_, e in rels])
-    links, d0s = [], []
-    for rel, d0, _, _ in rels:
-        rel = rel if rel is not None else (np.pi / 2, np.zeros(0), np.zeros(0))
-        links.append(Link(rel[0], d0, rel[1], rel[2]))
-        d0s.append(d0)
-    steps, snaps = [], []
+def fuse_ap(args):
+    """Walls that AP j finds after each position, in the global frame."""
+    j, links = args
+    f = FRAMES[j]
+    ap = f.to_local(SITES[j].pos)
+    pos = f.to_local(POS)
+    d0s = [lk.d0 for lk in links]
+    out = []
     for n in range(1, len(links) + 1):
-        fw = fuse_walk(AP, links[:n], d0s[:n], pos[:n]) if n >= 8 else []
-        steps.append([[r2(f["p0"][0]), r2(f["p0"][1]), r2(f["p1"][0]), r2(f["p1"][1]), label(f["theta"], f["rho"])] for f in fw])
-        if fw and (n % SNAP == 0 or n == len(links)):
-            snaps.append(snapshot(fw, pos[:n], exc, truth_heat))
-    cand = []
-    for lk, d0 in zip(links, d0s):
-        lines = walls_from_paths(AP, lk.phi0, d0, lk.phis, lk.dls) if len(lk.phis) else np.zeros((0, 2))
-        cand.append([[r2(t), r2(r)] for t, r in lines])
-    return seed, bw, steps, cand, snaps
+        fw = fuse_walk(ap, links[:n], d0s[:n], pos[:n]) if n >= 8 else []
+        out.append([Segment(f.to_global(w["p0"]), f.to_global(w["p1"]), int(w["size"])) for w in fw])
+    return out
+
+
+def snap_job(args):
+    return snapshot(*args)
+
+
+def candidates(j, lk):
+    """Candidate wall lines of one link as (theta, rho, AP) in the global frame."""
+    f = FRAMES[j]
+    ap = f.to_local(SITES[j].pos)
+    if not len(lk.phis):
+        return []
+    out = []
+    for th, rho in walls_from_paths(ap, lk.phi0, lk.d0, lk.phis, lk.dls):
+        n = np.array([np.cos(th), np.sin(th)]) @ f.r  # local normal to global
+        out.append([r2(np.arctan2(n[1], n[0])), r2(rho), j])
+    return out
 
 
 def thickness(lid: str) -> float:
@@ -197,32 +205,34 @@ def thickness(lid: str) -> float:
 
 
 def main():
-    jobs = [(seed, i, bw) for seed in SEEDS for bw in BWS for i in range(len(WALKS[seed]))]
-    res = pool_map(estimate, jobs)
-    by = {}
-    for (seed, i, bw), r in zip(jobs, res):
-        by.setdefault((seed, bw), []).append(r)
+    n = len(POS)
+    jobs = [(j, i) for j in range(len(SITES)) for i in range(n)]
+    cache = ROOT / "results" / "raw" / "demo_links.pkl"
+    key = (SEED, COMBO, BW)
+    old = pickle.loads(cache.read_bytes()) if cache.exists() else {}
+    if key not in old:
+        old = {key: pool_map(estimate, jobs)}
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_bytes(pickle.dumps(old))
+    res = old[key]
+    links = [[res[j * n + i][0] for i in range(n)] for j in range(len(SITES))]
+    excs = [np.array([res[j * n + i][2] for i in range(n)]) for j in range(len(SITES))]
+    per_ap = pool_map(fuse_ap, [(j, links[j]) for j in range(len(SITES))])
+    steps_segs = [[s for j in range(len(SITES)) for s in per_ap[j][k]] for k in range(n)]
+
     hx, hy, hpts = heat_grid()
-    truth_heat = rss_dbm(PLAN, Array(AP, n_ant=ANTS), hpts, max_order=2)
-    fused = pool_map(fuse_all, [(seed, bw, by[(seed, bw)], truth_heat) for seed in SEEDS for bw in BWS])
+    truth_heat = strongest(PLAN, hpts, 2)
+    at = [k for k in range(n) if steps_segs[k] and ((k + 1) % SNAP == 0 or k == n - 1)]
+    snaps = pool_map(snap_job, [(steps_segs[k], k + 1, excs, truth_heat) for k in at])
 
-    def final(f):
-        sn = f[4][-1]
-        return (sn["rooms_ok"], sn["iou"], -sn["heat_err"])
+    fused = [[[r2(s.a[0]), r2(s.a[1]), r2(s.b[0]), r2(s.b[1]), label_segment(PLAN, s.a, s.b)] for s in segs] for segs in steps_segs]
+    cand = [[c for j in range(len(SITES)) for c in candidates(j, links[j][i])] for i in range(n)]
 
-    for seed, bw, steps, _, snaps in fused:
-        last = steps[-1]
-        hit = {w[4] for w in last if w[4] not in (None, "south")}
-        sn = snaps[-1]
-        print(f"walk {seed} {bw}: found {len(hit)}/7, false {sum(1 for w in last if w[4] is None)}, rooms {sn['rooms_ok']}/5 IoU {sn['iou']}, radio map {sn['heat_err']} dB")
-    seed, bw, steps, cand, snaps = max(fused, key=final)
-    print(f"export: walk {seed} at {bw} MHz")
-    pos = WALKS[seed]
-
-    ap = Array(AP, n_ant=ANTS)
+    # the right-hand panel shows the paths at the living room AP (frame = plan frame)
+    ap0 = Array(SITES[0].pos, n_ant=ANTS)
     truth = []
-    for c in pos:
-        paths = image_paths(PLAN, ap, c, max_order=2)
+    for c in POS:
+        paths = image_paths(PLAN, ap0, c, max_order=2)
         gmax = max(abs(q.gain) for q in paths)
         truth.append([[r2(q.u[0]), r2(q.length), q.order] for q in paths if q.order <= 1 and 20 * np.log10(abs(q.gain) / gmax) > -30])
 
@@ -236,18 +246,20 @@ def main():
             "rooms": [[name, x, y] for name, (x, y) in PLAN.rooms],
             "rooms_true": len(PLAN.boxes),
         },
-        "ap": AP.tolist(),
-        "bw": bw,
-        "targets": [k for k in TARGETS if k != "south"],
-        "positions": [[r2(x), r2(y)] for x, y in pos],
+        "aps": [[r2(s.pos[0]), r2(s.pos[1])] for s in SITES],
+        "bw": BW,
+        "targets": INNER,
+        "positions": [[r2(x), r2(y)] for x, y in POS],
         "truth": truth,
-        "run": {"fused": steps, "cand": cand, "found": [r[2] for r in by[(seed, bw)]], "snaps": snaps},
+        "run": {"fused": fused, "cand": cand, "found": [res[i][1] for i in range(n)], "snaps": snaps},
         "rooms_grid": {"x0": r2(rx[0] - CELL / 2), "y0": r2(ry[0] - CELL / 2), "cell": CELL, "nx": len(rx), "ny": len(ry)},
         "heat_grid": {"x0": 0.0, "y0": 0.0, "cell": HEAT, "nx": len(hx), "ny": len(hy)},
         "heat_truth": [int(round(v)) for v in truth_heat],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, separators=(",", ":")))
+    last, sn = fused[-1], snaps[-1]
+    print(f"walls {len({w[4] for w in last if w[4] in INNER})}/{len(INNER)}, false {sum(w[4] is None for w in last)}, rooms {sn['rooms_ok']}/5 IoU {sn['iou']}, radio map {sn['heat_err']} dB")
     print(OUT, f"{OUT.stat().st_size / 1e6:.2f} MB")
 
 

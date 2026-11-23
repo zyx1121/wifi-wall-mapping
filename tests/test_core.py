@@ -114,6 +114,28 @@ def test_wall_loss_fit_recovers_losses():
     assert abs(c + 3.0) < 0.5
     assert np.all(np.abs(loss - true) < 0.7)
     assert false_lines(loss, count) == [2]
+    # one offset per AP
+    g = np.repeat([0, 1], 100)
+    e2 = np.where(g == 0, -3.0, 5.0) + a @ true + 0.5 * rng.standard_normal(200)
+    _, loss2, _ = fit_losses(e2, a, groups=g)
+    assert np.all(np.abs(loss2 - true) < 0.7)
+
+
+def test_ap_frame_keeps_paths():
+    """An AP on the north wall sees the same path lengths in its own frame."""
+    from wallmap.floorplan import MATERIALS_B, apartment_b
+    from wallmap.multi_ap import ap_sites, frame, local_plan
+
+    plan = apartment_b().with_materials(MATERIALS_B)
+    site = [s for s in ap_sites(plan) if s.normal[1] < 0][0]
+    f = frame(plan, site)
+    client = np.array([4.4, 5.5])
+    assert np.allclose(f.to_global(f.to_local(client)), client)
+    ap_l = f.to_local(site.pos)
+    assert ap_l[1] < f.to_local(client)[1]  # client in front of the AP
+    g = sorted(round(q.length, 6) for q in image_paths(plan, Array(site.pos), client, max_order=1))
+    lo = sorted(round(q.length, 6) for q in image_paths(local_plan(plan, f), Array(ap_l), f.to_local(client), max_order=1))
+    assert g == lo
 
 
 def test_ekf_beats_ftm_alone():

@@ -68,20 +68,26 @@ def crossings(ap_pos, clients, pieces: list[Segment], n_lines: int) -> np.ndarra
     return a
 
 
-def fit_losses(excess: np.ndarray, a: np.ndarray, f_scale: float = 2.0, max_db: float = 40.0):
-    """Offset c and loss per wall line, robust to wrong direct paths."""
+def fit_losses(excess: np.ndarray, a: np.ndarray, f_scale: float = 2.0, max_db: float = 40.0, groups=None):
+    """Offset c and loss per wall line, robust to wrong direct paths.
+
+    groups: index of the AP of each link, for one offset per AP. The
+    returned offset is then the one of AP 0.
+    """
     ok = np.isfinite(excess)
     e, m = excess[ok], a[ok]
+    g = np.zeros(len(e), int) if groups is None else np.asarray(groups, int)[ok]
+    n_g = int(g.max()) + 1 if len(g) else 1
     n = m.shape[1]
-    x0 = np.r_[np.median(e), np.full(n, 3.0)]
+    x0 = np.r_[np.full(n_g, np.median(e) if len(e) else 0.0), np.full(n, 3.0)]
 
     def res(x):
-        return x[0] + m @ x[1:] - e
+        return x[g] + m @ x[n_g:] - e
 
-    lo = np.r_[-np.inf, np.zeros(n)]
-    hi = np.r_[np.inf, np.full(n, max_db)]
+    lo = np.r_[np.full(n_g, -np.inf), np.zeros(n)]
+    hi = np.r_[np.full(n_g, np.inf), np.full(n, max_db)]
     sol = least_squares(res, x0, bounds=(lo, hi), loss="soft_l1", f_scale=f_scale)
-    return float(sol.x[0]), sol.x[1:], m.sum(axis=0).astype(int)
+    return float(sol.x[0]), sol.x[n_g:], m.sum(axis=0).astype(int)
 
 
 def false_lines(loss: np.ndarray, count: np.ndarray, min_links: int = 10, min_db: float = 1.7) -> list[int]:

@@ -10,7 +10,7 @@
 
 Wall detection rate for one client position at 30 dB SNR (100 random positions per point). Antennas help as much as bandwidth: with MUSIC, 8 antennas at 80 MHz find more walls than 4 antennas at 160 MHz.
 
-Watch 1 AP map an apartment while a person walks through every room. The page shows the walls, the rooms and the signal map: [dev.zyx.tw/wall-mapping](https://dev.zyx.tw/wall-mapping).
+Watch 3 APs map an apartment while a person walks through every room. The page shows the walls, the rooms and the signal map: [dev.zyx.tw/wall-mapping](https://dev.zyx.tw/wall-mapping).
 
 A home AP sees each wall as an echo of the client. This repo measures how close to the true wall position the AP gets, as a function of bandwidth, antenna count, estimator and hardware error.
 
@@ -40,6 +40,7 @@ The reference setup is 160 MHz, 4 antennas and 30 dB.
 | 6 | Do real wall materials break it? | NOMP holds: 3 of 5 rooms, 5 of 7 walls. MUSIC takes a reflection as the direct path on 27% of links and drops to 1 room. |
 | 7 | What does direct-path loss add? | The loss of each wall: 10 cm concrete fits 14.7 to 15.3 dB (true 15.6). With these losses the radio map error behind walls is 1.1 dB (median). |
 | 8 | What if the phone position is unknown? | IMU plus angle plus FTM tracks the phone to 0.10 m (median) and keeps 2.3 of 5 rooms. FTM alone gives 0.23 m but jumpy positions, and the rooms fall apart. |
+| 9 | Do more APs help? | Yes. 1 AP in the living room gives 3.0 of 5 rooms (mean IoU 0.41). Add 1 or 2 APs and NOMP gives 3.7 and 4.1 rooms (0.58 and 0.68). The best run gives 5 of 5 (0.92). |
 
 Stage 3 at the reference setup, median wall error (m) and detection rate:
 
@@ -97,6 +98,17 @@ Stage 8 on plan B, NOMP at 160 MHz, phone IMU (4% step scale, 3 degrees of headi
 
 Without FTM, the IMU and the angle still find the LoS length to 0.38 m (median). The room step needs a smooth walk: noisy positions look like a person who walks through walls.
 
+Stage 9 on plan B, NOMP at 160 MHz. Each room has 1 AP site on the middle of its longest outer wall. 1 AP sees a wall only where its mirror reflection lands on the wall. From the living room, no position of the walk sees the wall between bedroom A and the bathroom. The rows give the mean over the 3 walks and every set of rooms in the row:
+
+| APs | Sets | Inner walls found | False walls | Rooms | Mean IoU |
+|-----|------|-------------------|-------------|-------|----------|
+| living room | 1 | 2.0 / 4 | 4.3 | 3.0 / 5 | 0.41 |
+| 1 in another room | 4 | 2.1 / 4 | 1.8 | 0.9 / 5 | 0.21 |
+| living room and 1 more | 4 | 3.2 / 4 | 6.2 | 3.7 / 5 | 0.58 |
+| living room and 2 more | 6 | 3.8 / 4 | 8.0 | 4.1 / 5 | 0.68 |
+
+With the true paths in place of NOMP, 1 AP in the living room gives 3.7 of 5 rooms and 3 APs give 4.3. So the AP sites limit the result more than the estimator does. NOMP needs the AP in the living room, where the walk spends most of its time. An AP in a small room alone finds less than 1 room.
+
 ## Reproduce
 
 ```sh
@@ -110,9 +122,10 @@ uv run python stage5.py
 uv run python stage6.py
 uv run python stage7.py
 uv run python stage8.py
+uv run python stage9.py
 ```
 
-Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes and stage 3 takes 15 minutes. Stage 4 takes 28 minutes, stage 5 takes 7 minutes and stage 6 takes 15 minutes. Stages 7 and 8 reuse the links of stage 6.
+Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes and stage 3 takes 15 minutes. Stage 4 takes 28 minutes, stage 5 takes 7 minutes and stage 6 takes 15 minutes. Stages 7 and 8 reuse the links of stage 6. Stage 9 takes about 25 minutes.
 
 ## How it works
 

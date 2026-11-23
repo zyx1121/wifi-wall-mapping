@@ -14,8 +14,8 @@ export type Snap = {
 
 export type Run = {
   fused: Seg[][] // walls after each position
-  cand: [number, number][][] // candidate lines (theta, rho) of each position
-  found: [number, number][][] // paths of each position: s = cos(phi), path length
+  cand: [number, number, number][][] // candidate lines (theta, rho, AP) of each position
+  found: [number, number][][] // paths at the first AP of each position: s = cos(phi), path length
   snaps: Snap[]
 }
 
@@ -26,10 +26,10 @@ export type Layer = "walls" | "rooms" | "heat"
 export type Walk = {
   // walls: x0, y0, x1, y1, thickness (m), material
   plan: { width: number; depth: number; walls: [number, number, number, number, number, string][]; rooms: [string, number, number][]; rooms_true: number }
-  ap: [number, number]
+  aps: [number, number][]
   targets: string[]
   positions: [number, number][]
-  truth: [number, number, number][][] // s, path length, order
+  truth: [number, number, number][][] // paths at the first AP: s, path length, order
   bw: number
   run: Run
   rooms_grid: Grid
@@ -202,11 +202,11 @@ function drawPlan(ctx: CanvasRenderingContext2D, w: Walk, run: Run, t: number, n
   ctx.strokeStyle = C.found
   ctx.globalAlpha = 0.45
   ctx.lineWidth = 1.5
-  for (const [th, rho] of cur) {
+  for (const [th, rho, j] of cur) {
     const nx = Math.cos(th)
     const ny = Math.sin(th)
-    const fx = w.ap[0] + rho * nx
-    const fy = w.ap[1] + rho * ny
+    const fx = w.aps[j][0] + rho * nx
+    const fy = w.aps[j][1] + rho * ny
     ctx.beginPath()
     ctx.moveTo(X(fx + ny * len), Y(fy - nx * len))
     ctx.lineTo(X(fx - ny * len), Y(fy + nx * len))
@@ -241,12 +241,15 @@ function drawPlan(ctx: CanvasRenderingContext2D, w: Walk, run: Run, t: number, n
     ctx.stroke()
   }
 
-  // AP and the walker
-  ctx.fillStyle = k.fg
-  ctx.fillRect(X(w.ap[0]) - 7, Y(w.ap[1]) - 7, 14, 14)
-  ctx.textAlign = "left"
-  ctx.fillStyle = k.muted
-  ctx.fillText("AP", X(w.ap[0]) + 12, Y(w.ap[1]) - 8)
+  // APs and the walker
+  ctx.textAlign = "center"
+  w.aps.forEach(([ax, ay], j) => {
+    ctx.fillStyle = k.fg
+    ctx.fillRect(X(ax) - 7, Y(ay) - 7, 14, 14)
+    ctx.fillStyle = k.muted
+    // label on the room side of the wall
+    ctx.fillText(`AP ${j + 1}`, X(ax), Y(ay) + (ay < w.plan.depth / 2 ? -14 : 24))
+  })
   const i = Math.min(w.positions.length - 1, Math.floor(t))
   const j = Math.min(w.positions.length - 1, i + 1)
   const f = t - Math.floor(t)
@@ -271,7 +274,7 @@ function drawPaths(ctx: CanvasRenderingContext2D, w: Walk, run: Run, n: number, 
   ctx.font = FONT
   ctx.fillStyle = k.muted
   ctx.textAlign = "left"
-  ctx.fillText("這個位置的路徑", x0, top - 12)
+  ctx.fillText("AP 1 收到的路徑", x0, top - 12)
   ctx.strokeStyle = k.faint
   ctx.lineWidth = 1
   ctx.strokeRect(X(-1), Y(lmax), gw, gh)
