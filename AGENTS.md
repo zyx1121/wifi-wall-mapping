@@ -20,6 +20,8 @@ Rules for coding agents that change this repo. Facts about the project are in th
 - Experiments run in parallel processes (`pool_map`). Do not add threads inside one trial.
 - Each stage uses its own seeds: stage 2 uses 1000+, stage 3 uses 2000+, stage 4 reports 5000+. Seeds 3000 to 3009 tuned the fusion parameters. Do not report results from tuning seeds.
 - Walks: we tuned `fuse_walk` and `close_rooms` on apartment A (`floorplan.apartment`, walk seed 0). Apartment B (`floorplan.apartment_b`) with walk seeds 7000+ is the held-out set. Report plan B. Do not tune any threshold on it. The wall-loss threshold in `attenuation.false_lines` also comes from plan A.
+- Real apartments (stage 11): `swiss_pick.py 12 0` is the test set and `swiss_pick.py 12 1` is the dev set. Choose settings only on the dev set. `stage11.EXTEND` came from the dev set.
+- `results/raw/stage11_links.pkl` keys links by walk index. Remove it after you change the walk, the AP sites or the materials.
 - The OMP and IFFT estimators are on-grid. Their tests use a 0.3 m and 3 degree tolerance. The other estimators use 0.05 m and 1 degree.
 
 ## Conventions

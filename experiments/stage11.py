@@ -214,7 +214,7 @@ def main():
             jobs += [(aid, style, k, int(i), mode) for k in range(len(sites)) for i in front[k] for mode in MODES]
     n_all = sum(len(pos) * len(sites) for _, pos, sites, _ in APTS.values())
     n_front = sum(len(f) for *_, front in APTS.values() for f in front)
-    print(f"{len(APTS)} apartments, {sum(len(v[2]) for v in APTS.values())} AP sites, {len(jobs)} links; {1 - n_front / n_all:.0%} of positions lie behind their AP and are dropped")
+    print(f"{len(APTS)} apartments, {sum(len(v[2]) for v in APTS.values())} AP sites, {len(jobs)} links. Each AP drops the {1 - n_front / n_all:.0%} of positions behind it")
     by: dict[tuple, list] = {}
     for (aid, style, k, i, mode), r in zip(jobs, load_links(jobs)):
         by.setdefault((aid, style, k, mode), []).append(r)
@@ -261,7 +261,7 @@ def main():
 
     inner = [n for apt, *_ in APTS.values() for n in apt.kind if apt.kind[n] == "wall" and n not in apt.outer]
     concrete = np.mean([apt.thick[n] >= 0.15 for apt, *_ in APTS.values() for n in apt.kind if apt.kind[n] == "wall" and n not in apt.outer])
-    print(f"{len(inner)} inner walls; under the swiss rule {concrete:.0%} are concrete (15 cm or more)")
+    print(f"{len(inner)} inner walls. Under the swiss rule {concrete:.0%} are concrete (15 cm or more)")
     print("part 1: rooms, mean per apartment, then over apartments")
     print(f"{'extend':6s} {'style':7s} {'mode':6s} {'APs':>3s} {'walls':>11s} {'false':>6s} {'rooms':>11s} {'IoU':>5s}")
     for ext_name in EXTENDS:

@@ -42,6 +42,7 @@ The reference setup is 160 MHz, 4 antennas and 30 dB.
 | 8 | What if the phone position is unknown? | IMU plus angle plus FTM tracks the phone to 0.10 m (median) and keeps 2.3 of 5 rooms. FTM alone gives 0.23 m but jumpy positions, and the rooms fall apart. |
 | 9 | Do more APs help? | Yes. 1 AP in the living room gives 3.0 of 5 rooms (mean IoU 0.41). Add 1 or 2 APs and NOMP gives 3.7 and 4.1 rooms (0.58 and 0.68). The best run gives 5 of 5 (0.92). |
 | 10 | After one walk, where should the AP go? | The map from the walk picks a spot that raises the weakest 10% of the house by 1.7 to 7.3 dB. A pick from the distance only does as well. The true walls pick a spot 3 dB better. |
+| 11 | Does it hold in real apartments? | No. On 12 Swiss Dwellings apartments, 3 APs find 2.9 to 3.9 of 9.1 inner walls and 1.4 to 1.8 of 5.8 rooms (IoU 0.27 to 0.36). True paths find 5.1 to 6.2 walls. Moving the AP gains 16 to 28 dB at the weakest spots. The map picks no better spot than the distance alone. |
 
 Stage 3 at the reference setup, median wall error (m) and detection rate:
 
@@ -122,6 +123,50 @@ Stage 10 on plan B, NOMP at 160 MHz. The AP starts at the site of 1 room and the
 
 The true walls and materials pick the best spot, also with the direct path only. The true walls at 5 dB each reach -50.7 dBm. The map of 1 walk with 1 AP finds too few walls to beat free space. This plan is small, so the best spot is only 3 dB better than the middle of the house.
 
+### Stage 11: real apartments
+
+Stage 11 asks the questions of stages 9 and 10 on 12 real apartments from [Swiss Dwellings](https://zenodo.org/records/7788422) (CC BY 4.0). `wallmap/swiss.py` turns the wall, window, door and room polygons of each apartment into a plan:
+
+- Each wall becomes 1 segment on its centre line, with its own thickness. The walls are cut at every door and window.
+- A window is double glazing. The entrance door is 4.5 cm wood. Inner doors are open.
+- Rooms with no wall between them (an open living room and kitchen) count as 1 room.
+- The walk visits every room, with about 1 stop per 2 m². Each room with a long outer wall gets 1 AP site. The array cannot tell front from back, so each AP drops the positions behind it (3% of them).
+
+The dataset has no materials, so 2 rules give them:
+
+- swiss: outer walls are concrete of their own thickness. Inner walls of 15 cm or more are concrete (61% of them), and thinner ones are plasterboard on studs.
+- taiwan: outer walls are 15 cm concrete. Inner walls are 12 cm brick.
+
+Stage 11 settings are the same as for stage 9: NOMP at 160 MHz, P.2040 walls and the fixed noise floor. The table gives the mean over the AP sets of each apartment, then the mean over the 12 apartments. "Truth" closes the rooms over the true walls, which is the best that the room step can do:
+
+| Walls | APs | Inner walls found | False walls | Rooms | IoU |
+|-------|-----|-------------------|-------------|-------|-----|
+| truth | - | 8.8 / 9.1 | 0.0 | 3.1 / 5.8 | 0.49 |
+| swiss, NOMP | 1 | 1.1 / 9.1 | 1.1 | 0.4 / 5.8 | 0.12 |
+| swiss, NOMP | 3 | 2.9 / 9.1 | 3.4 | 1.4 / 5.8 | 0.27 |
+| swiss, true paths | 3 | 5.1 / 9.1 | 5.0 | 2.7 / 5.8 | 0.44 |
+| taiwan, NOMP | 1 | 1.7 / 9.1 | 2.0 | 0.6 / 5.8 | 0.15 |
+| taiwan, NOMP | 3 | 3.9 / 9.1 | 5.9 | 1.8 / 5.8 | 0.36 |
+| taiwan, true paths | 3 | 6.2 / 9.1 | 9.0 | 2.7 / 5.8 | 0.46 |
+
+The results:
+
+- The sensing is the limit. Even the true paths show only 56 to 68% of the inner walls. Each AP sees a wall only where its mirror image falls on the wall.
+- The thinner brick walls of the taiwan rule give more walls than the concrete of the swiss rule. More signal goes through them, so the phone sees reflections in more rooms.
+- More APs bring more false walls. In a non-convex plan, an AP also sees reflections from rooms around a corner.
+- The room step also fails on real plans. It cuts the plane along whole wall lines, and the many short walls of a real plan cut the rooms into pieces. With the true walls it finds only 3.1 of 5.8 rooms.
+
+We tried a fix on 12 other apartments (the dev set, `swiss_pick.py` seed 1): extend each wall by 1.5 m, not to a whole line. With the true walls, this raises the test set from 3.1 to 4.4 rooms (IoU 0.49 to 0.65). With the sensed walls it makes the result worse (3 APs, swiss: 0.6 rooms, IoU 0.15). The sensed walls are shorter than the true walls, so 1.5 m does not close them. `results/stage11/rooms.json` holds both settings.
+
+The second question, where to put the AP. The p10 is the 10th percentile of the received power over the house. The mean is over the 48 AP sites, per apartment first:
+
+| Walls | p10 now | Pick of the map | Pick of free space | Best |
+|-------|---------|-----------------|--------------------|------|
+| swiss | -107.2 | -79.1 | -79.6 | -69.9 |
+| taiwan | -72.8 | -57.0 | -57.1 | -55.4 |
+
+Moving the AP from a room to the middle of the house gains 16 dB (taiwan) to 28 dB (swiss). The map from 1 walk does not beat free space. It is better by 0.5 dB in 6 to 15% of the runs and worse in 6 to 8%. With concrete walls, the true plan finds a spot 10 dB better than both. So a better map is worth more in a concrete house.
+
 ## Reproduce
 
 ```sh
@@ -137,9 +182,13 @@ uv run python stage7.py
 uv run python stage8.py
 uv run python stage9.py
 uv run python stage10.py
+uv run python swiss_pick.py 12 0
+uv run python stage11.py
 ```
 
-Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes and stage 3 takes 15 minutes. Stage 4 takes 28 minutes, stage 5 takes 7 minutes and stage 6 takes 15 minutes. Stages 7 and 8 reuse the links of stage 6. Stage 9 takes about 25 minutes and stage 10 about 20 minutes.
+Stage 11 needs `geometries.csv` from [Swiss Dwellings v3.0.0](https://zenodo.org/records/7788422) (CC BY 4.0, 1.1 GB). Set `SWISS_CSV` to its path. The default path is `../data/swiss-dwellings/geometries.csv`, next to the repo. Git does not keep the data.
+
+Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes and stage 3 takes 15 minutes. Stage 4 takes 28 minutes, stage 5 takes 7 minutes and stage 6 takes 15 minutes. Stages 7 and 8 reuse the links of stage 6. Stage 9 takes about 25 minutes and stage 10 about 20 minutes. Stage 11 takes about 1 hour.
 
 ## How it works
 
@@ -167,7 +216,8 @@ Facts for coding agents and LLM tools. The rules for changing the code are in [A
 - **Verify**: `uv run pytest -q`
 - **Config**: none
 - **Secrets**: none
-- **Limits**: 2D only, rectangular rooms in stages 1 to 4. No ray tracing or diffuse scattering yet. No hardware measurements yet.
+- **Data**: stage 11 reads Swiss Dwellings v3.0.0 (CC BY 4.0, Zenodo 7788422), which you download yourself.
+- **Limits**: 2D only, rectangular rooms in stages 1 to 4. The Swiss Dwellings plans have no wall materials, so stage 11 assigns them by rule. No ray tracing or diffuse scattering yet. No hardware measurements yet.
 
 ## Development
 

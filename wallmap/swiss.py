@@ -121,7 +121,7 @@ class Apartment:
     outer: set[str]  # names of outer segments
     thick: dict[str, float]  # thickness per segment name
     kind: dict[str, str]  # wall, window or door per segment name
-    rooms: list  # (name, polygon) per dataset area; plan.boxes merges open areas for scoring
+    rooms: list  # (name, polygon) per dataset area. plan.boxes merges open areas for scoring
 
 
 def _cut_openings(raw, min_piece: float = 0.1):
@@ -437,7 +437,7 @@ def ap_sites(apt: Apartment, walk_pos: np.ndarray, inset: float = 0.1, front: fl
     """1 AP per room on the middle of its longest outer wall.
 
     The array cannot tell front from back. A site needs `share` of the walk
-    at least `front` metres in front of it; the fusion drops the other
+    at least `front` metres in front of it. The fusion drops the other
     positions (in_front), since the phone knows where it is.
     """
     from .multi_ap import Site
