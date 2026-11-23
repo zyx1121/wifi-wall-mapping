@@ -5,7 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import config from "@/task.config.json"
-import { METHODS, drawFrame, score, type Walk } from "./walk"
+import { HEAT_MAX, HEAT_MIN, METHODS, drawFrame, heatColor, score, snapAt, type Layer, type Walk } from "./walk"
+
+const LAYERS: { id: Layer; name: string }[] = [
+  { id: "walls", name: "牆面" },
+  { id: "rooms", name: "房間" },
+  { id: "heat", name: "訊號" },
+]
+
+const GRADIENT = `linear-gradient(to right, ${[0, 0.25, 0.5, 0.75, 1].map(f => `rgb(${heatColor(HEAT_MIN + f * (HEAT_MAX - HEAT_MIN)).join(",")})`).join(", ")})`
 
 const SPEED = 6 // positions per second (0.3 m apart)
 
@@ -13,7 +21,8 @@ export default function App() {
   const lang = "zh-TW" as const
   const [walk, setWalk] = useState<Walk | null>(null)
   const [method, setMethod] = useState("music")
-  const [bw, setBw] = useState("160")
+  const [bw, setBw] = useState("320")
+  const [layer, setLayer] = useState<Layer>("walls")
   const [playing, setPlaying] = useState(true)
   const [n, setN] = useState(1)
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -40,14 +49,15 @@ export default function App() {
       }
       const next = Math.floor(t.current) + 1
       setN(prev => (prev === next ? prev : next))
-      if (canvas.current) drawFrame(canvas.current, walk, run, t.current)
+      if (canvas.current) drawFrame(canvas.current, walk, run, t.current, layer)
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
-  }, [walk, run, playing, total])
+  }, [walk, run, playing, total, layer])
 
   const s = run && walk ? score(run.fused[n - 1] ?? [], walk.targets) : null
+  const snap = run ? snapAt(run, n) : null
 
   return (
     <TaskShell title={config.title} lang={lang} full actions={<TaskThemeToggle lang={lang} />}>
@@ -59,6 +69,11 @@ export default function App() {
             <Tabs value={method} onValueChange={v => setMethod(String(v))}>
               <TabsList aria-label="方法" className="h-auto flex-wrap">
                 {METHODS.map(m => <TabsTrigger key={m.id} value={m.id}>{m.name}</TabsTrigger>)}
+              </TabsList>
+            </Tabs>
+            <Tabs value={layer} onValueChange={v => setLayer(v as Layer)}>
+              <TabsList aria-label="圖層">
+                {LAYERS.map(l => <TabsTrigger key={l.id} value={l.id}>{l.name}</TabsTrigger>)}
               </TabsList>
             </Tabs>
             <Tabs value={bw} onValueChange={v => setBw(String(v))}>
@@ -93,8 +108,19 @@ export default function App() {
 
           <p className="flex flex-wrap items-center gap-x-6 gap-y-1 text-body tabular-nums">
             <span>第 {n} / {total} 個位置</span>
-            <span className="flex items-center gap-2"><span className="inline-block h-1 w-4 bg-[#2fbf71]" />找到 {s.found} / {walk.targets.length} 面牆</span>
-            <span className="flex items-center gap-2"><span className="inline-block h-1 w-4 bg-[#ef4f4f]" />假牆 {s.falses} 面</span>
+            {layer === "walls" && (
+              <>
+                <span className="flex items-center gap-2"><span className="inline-block h-1 w-4 bg-[#2fbf71]" />找到 {s.found} / {walk.targets.length} 面牆</span>
+                <span className="flex items-center gap-2"><span className="inline-block h-1 w-4 bg-[#ef4f4f]" />假牆 {s.falses} 面</span>
+              </>
+            )}
+            {layer === "rooms" && <span>分出 {snap?.rooms_ok ?? 0} / 5 間房</span>}
+            {layer === "heat" && (
+              <>
+                <span className="flex items-center gap-2">{HEAT_MIN}<span className="inline-block h-2 w-20" style={{ background: GRADIENT }} />{HEAT_MAX} dBm</span>
+                {snap && <span>隔牆房間誤差 {snap.heat_err} dB</span>}
+              </>
+            )}
           </p>
         </section>
       )}
