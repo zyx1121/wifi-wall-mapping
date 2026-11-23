@@ -41,6 +41,7 @@ The reference setup is 160 MHz, 4 antennas and 30 dB.
 | 7 | What does direct-path loss add? | The loss of each wall: 10 cm concrete fits 14.7 to 15.3 dB (true 15.6). With these losses the radio map error behind walls is 1.1 dB (median). |
 | 8 | What if the phone position is unknown? | IMU plus angle plus FTM tracks the phone to 0.10 m (median) and keeps 2.3 of 5 rooms. FTM alone gives 0.23 m but jumpy positions, and the rooms fall apart. |
 | 9 | Do more APs help? | Yes. 1 AP in the living room gives 3.0 of 5 rooms (mean IoU 0.41). Add 1 or 2 APs and NOMP gives 3.7 and 4.1 rooms (0.58 and 0.68). The best run gives 5 of 5 (0.92). |
+| 10 | After one walk, where should the AP go? | The map from the walk picks a spot that raises the weakest 10% of the house by 1.7 to 7.3 dB. A pick from the distance only does as well. The true walls pick a spot 3 dB better. |
 
 Stage 3 at the reference setup, median wall error (m) and detection rate:
 
@@ -109,6 +110,18 @@ Stage 9 on plan B, NOMP at 160 MHz. Each room has 1 AP site on the middle of its
 
 With the true paths in place of NOMP, 1 AP in the living room gives 3.7 of 5 rooms and 3 APs give 4.3. So the AP sites limit the result more than the estimator does. NOMP needs the AP in the living room, where the walk spends most of its time. An AP in a small room alone finds less than 1 room.
 
+Stage 10 on plan B, NOMP at 160 MHz. The AP starts at the site of 1 room and the phone walks once. We predict the 10th percentile of the received power (p10, the weakest spots) for 257 AP positions and take the best. The true plan scores the pick. The mean is over the 3 walks:
+
+| AP now | Rooms found | p10 now (dBm) | p10 at the pick of the map | p10 at the pick of free space | Best p10 |
+|--------|-------------|---------------|----------------------------|-------------------------------|----------|
+| living room | 3.0 / 5 | -53.2 | -51.5 | -52.4 | -49.1 |
+| kitchen | 2.7 / 5 | -57.2 | -52.7 | -52.4 | -49.1 |
+| bedroom B | 0.7 / 5 | -53.8 | -51.9 | -52.4 | -49.1 |
+| bedroom A | 0.0 / 5 | -59.6 | -52.3 | -52.4 | -49.1 |
+| bathroom | 0.0 / 5 | -55.0 | -52.4 | -52.4 | -49.1 |
+
+The true walls and materials pick the best spot, also with the direct path only. The true walls at 5 dB each reach -50.7 dBm. The map of 1 walk with 1 AP finds too few walls to beat free space. This plan is small, so the best spot is only 3 dB better than the middle of the house.
+
 ## Reproduce
 
 ```sh
@@ -123,9 +136,10 @@ uv run python stage6.py
 uv run python stage7.py
 uv run python stage8.py
 uv run python stage9.py
+uv run python stage10.py
 ```
 
-Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes and stage 3 takes 15 minutes. Stage 4 takes 28 minutes, stage 5 takes 7 minutes and stage 6 takes 15 minutes. Stages 7 and 8 reuse the links of stage 6. Stage 9 takes about 25 minutes.
+Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes and stage 3 takes 15 minutes. Stage 4 takes 28 minutes, stage 5 takes 7 minutes and stage 6 takes 15 minutes. Stages 7 and 8 reuse the links of stage 6. Stage 9 takes about 25 minutes and stage 10 about 20 minutes.
 
 ## How it works
 
