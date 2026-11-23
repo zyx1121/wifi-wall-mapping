@@ -33,10 +33,11 @@ Rules for coding agents that change this repo. Facts about the project are in th
 ## Web demo
 
 - `demo/` is a React and Vite page from the task-web starter. It plays the walk that `experiments/demo_walk.py` exports.
-- The demo plays the held-out plan B (`apartment_b`, 9 m by 7.5 m, 5 rooms) with the P.2040 walls of `MATERIALS_B`. It uses the fixed noise floor `snr_1m_db` and draws each true wall at its real thickness.
-- `fuse_walk` in `wallmap/fusion.py` fuses the walk. A wall needs 8 links, 1 m of spread in client distance and a support test. The spread test removes the false walls that a straight walk between parallel walls makes.
-- Every 10 positions, `demo_walk.py` stores a snapshot. It drops the false walls by their loss (stage 7). The snapshot holds the rooms, the closed walls, and a radio map from the found walls and their fitted losses. The page has 3 layers: walls, rooms and signal.
-- `demo_walk.py` runs NOMP on the 3 walks of plan B at 160 and 320 MHz. It exports the run with the most rooms, so the page shows the best of 6 runs, not a typical one. Report the stage tables, not the demo.
+- The demo plays the held-out plan B (`apartment_b`, 9 m by 7.5 m, 5 rooms) with 3 APs (stage 9). The walls are the P.2040 walls of `MATERIALS_B`. It draws each true wall at its real thickness.
+- `wallmap/multi_ap.py` runs each AP in its own frame. The fusion code needs the array along x and the clients at y > 0.
+- `fuse_walk` in `wallmap/fusion.py` fuses the walk of each AP. A wall needs 8 links, 1 m of spread in client distance and a support test. The spread test removes the false walls that a straight walk between parallel walls makes.
+- Every 10 positions, `demo_walk.py` stores a snapshot. It closes the rooms over the walls of all APs. It does not drop walls by their loss: the stage 7 threshold drops true walls with 3 APs. The snapshot holds the rooms, the closed walls, and a radio map of the strongest AP. The page has 3 layers: walls, rooms and signal.
+- The APs and the walk are the best plan B run of stage 9. The page shows the best run, not a typical one. Report the stage tables, not the demo.
 - Build on the sandbox: run `uv run python demo_walk.py` in `experiments/` (about 4 minutes), then `npm ci && npm run build` in `demo/`. The JSON goes to `demo/public/wall-mapping-assets/`, which git and the sync script ignore.
 - Run `npm run audit -- <url>` before you deploy.
 - Deploy: rename `dist/index.html` to `wall-mapping.html`, then rsync it and `dist/wall-mapping-assets/` to `dev-demo:dev-demo/public/`. The page is at https://dev.zyx.tw/wall-mapping.
@@ -47,4 +48,4 @@ Rules for coding agents that change this repo. Facts about the project are in th
 uv run pytest -q
 ```
 
-All 12 tests must pass. For an estimator change, also run `experiments/stage2.py 20` and compare the reference row (160 MHz, 4 antennas, 30 dB) against `results/stage2/stage2.json`.
+All 13 tests must pass. For an estimator change, also run `experiments/stage2.py 20` and compare the reference row (160 MHz, 4 antennas, 30 dB) against `results/stage2/stage2.json`.

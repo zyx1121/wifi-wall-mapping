@@ -106,7 +106,7 @@ export default function App() {
             {layer === "heat" && (
               <>
                 <span className="flex items-center gap-2">{HEAT_MIN}<span className="inline-block h-2 w-20" style={{ background: GRADIENT }} />{HEAT_MAX} dBm</span>
-                {snap && <span>隔牆房間誤差 {snap.heat_err} dB</span>}
+                {snap && <span>訊號誤差 {snap.heat_err} dB</span>}
               </>
             )}
           </p>
