@@ -10,7 +10,7 @@
 
 Wall detection rate for one client position at 30 dB SNR (100 random positions per point). Antennas help as much as bandwidth: with MUSIC, 8 antennas at 80 MHz find more walls than 4 antennas at 160 MHz.
 
-Watch 1 AP map an apartment while a person walks through every room: [dev.zyx.tw/wall-mapping](https://dev.zyx.tw/wall-mapping).
+Watch 1 AP map an apartment while a person walks through every room. The page shows the walls, the rooms and the signal map: [dev.zyx.tw/wall-mapping](https://dev.zyx.tw/wall-mapping).
 
 A home AP sees each wall as an echo of the client. This repo measures how close to the true wall position the AP gets, as a function of bandwidth, antenna count, estimator and hardware error.
 
