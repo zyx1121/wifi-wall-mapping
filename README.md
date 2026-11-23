@@ -20,6 +20,7 @@ A home AP sees each wall as an echo of the client. This repo measures how close 
 - **Compare 5 estimators**: IFFT, OMP, NOMP, joint angle and delay MUSIC, and Matrix Pencil.
 - **Add hardware errors**: random packet phase, timing offset, antenna phase, AGC, 8-bit quantization and RF chain ripple.
 - **Fuse client positions**: cluster candidate walls, test consistency and solve the unknown LoS length.
+- **Close rooms**: cut the plane with the wall lines, then merge the cells that the walk connects.
 
 ## Results
 
@@ -32,6 +33,7 @@ The reference setup is 160 MHz, 4 antennas and 30 dB.
 | 2 | Which estimator, one client position? | MUSIC: median 0.04 m, p90 0.15 m, 75% of walls found. IFFT finds 24%. |
 | 3 | Which hardware error hurts? | Antenna phase most. Without calibration, MUSIC finds 8% of walls instead of 71%. RF chain ripple lowers MUSIC to 52%. |
 | 4 | Does fusion remove false walls? | Yes, with NOMP and known LoS length: 0.1 false walls per map at 100 positions. An unknown LoS length leaves 1.4. |
+| 5 | Do the walls close into rooms? | Partly. On the held-out apartment, MUSIC at 160 MHz gives 3 of 5 rooms (mean IoU 0.40). The true walls give 5 of 5 (0.95). |
 
 Stage 3 at the reference setup, median wall error (m) and detection rate:
 
@@ -54,6 +56,18 @@ Stage 4 in 2D with all calibrated hardware errors, NOMP, 12 random rooms. Cells:
 
 MUSIC loses walls when it fuses more positions (160 MHz: 0.42 at 1 position, 0.25 at 100). The cause is not known yet. Floor and ceiling bounces (2.5D) leave 1.7 false walls per map with NOMP at 320 MHz.
 
+Stage 5 on apartment B (held out, 3 walks, known LoS length, ideal hardware). A room counts when its IoU with a found room is 0.5 or more:
+
+| Walls from | Mean IoU | Rooms | Walls found | False walls |
+|------------|----------|-------|-------------|-------------|
+| walk only | 0.07 | 0 / 5 | none | none |
+| true walls | 0.95 | 5 / 5 | 7 / 7 | 0 |
+| MUSIC, 160 MHz | 0.40 | 3.0 / 5 | 5 / 7 | 1.0 |
+| NOMP, 160 MHz | 0.41 | 3.0 / 5 | 5 / 7 | 1.0 |
+| NOMP, 320 MHz | 0.51 | 3.7 / 5 | 5 / 7 | 10.3 |
+
+The AP sees few reflections from walls between 2 far rooms. Here those walls are the bedroom and bathroom wall and the kitchen and bedroom wall, so each pair of rooms becomes 1 room. A false wall near the AP splits the living room.
+
 ## Reproduce
 
 ```sh
@@ -63,9 +77,10 @@ uv run python stage1.py
 uv run python stage2.py 100
 uv run python stage3.py 100
 uv run python stage4.py 12
+uv run python stage5.py
 ```
 
-Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes, stage 3 takes 15 minutes and stage 4 takes 28 minutes.
+Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes, stage 3 takes 15 minutes stage 4 takes 28 minutes and stage 5 takes 7 minutes.
 
 ## How it works
 
@@ -93,7 +108,7 @@ Facts for coding agents and LLM tools. The rules for changing the code are in [A
 - **Verify**: `uv run pytest -q`
 - **Config**: none
 - **Secrets**: none
-- **Limits**: 2D rectangular rooms only. No ray tracing or diffuse scattering yet. No hardware measurements yet.
+- **Limits**: 2D only, rectangular rooms in stages 1 to 4. No ray tracing or diffuse scattering yet. No hardware measurements yet.
 
 ## Development
 
