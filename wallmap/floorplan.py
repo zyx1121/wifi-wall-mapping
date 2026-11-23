@@ -31,25 +31,31 @@ class FloorPlan:
     boxes: list[tuple[str, float, float, float, float]] = field(default_factory=list)
     doors: list[tuple[float, float]] = field(default_factory=list)
     waypoints: list[tuple[float, float]] = field(default_factory=list)
-    # wall type (materials.WALLS) per line id; None keeps gamma_wall and transmission
-    materials: dict[str, str] | None = None
+    # wall type per segment name or line id: a materials.WALLS key or a tuple of layers.
+    # None keeps gamma_wall and transmission.
+    materials: dict | None = None
     # transmission loss in dB per line id, used when materials is None (missing ids use transmission)
     losses: dict[str, float] | None = None
 
     def walls(self) -> list[Wall]:
         return [Wall(n, np.array(a, float), np.array(b, float), self.gamma_wall) for n, a, b in self.segments]
 
+    def material(self, name: str):
+        """Wall type of a segment: by segment name first, then by line id."""
+        m = self.materials
+        return m[name] if name in m else m[line_id(name)]
+
     def reflect(self, wall: Wall, cos_i: float, fc: float) -> complex:
         if self.materials is None:
             return complex(wall.gamma)
-        return coefficients(self.materials[line_id(wall.name)], fc, cos_i)[0]
+        return coefficients(self.material(wall.name), fc, cos_i)[0]
 
     def transmit(self, wall: Wall, cos_i: float, fc: float) -> complex:
         if self.materials is None:
             if self.losses and line_id(wall.name) in self.losses:
                 return complex(10 ** (-self.losses[line_id(wall.name)] / 20))
             return complex(self.transmission)
-        return coefficients(self.materials[line_id(wall.name)], fc, cos_i)[1]
+        return coefficients(self.material(wall.name), fc, cos_i)[1]
 
     def with_materials(self, materials: dict[str, str]) -> "FloorPlan":
         from dataclasses import replace
@@ -130,6 +136,9 @@ def apartment_b() -> FloorPlan:
 
 # line id of each segment: collinear segments share one line
 def line_id(name: str) -> str:
+    """Line of a segment: "y5a" and "y5b" are on line "y5", "L3_0" and "L3_1" on "L3"."""
+    if "_" in name:
+        return name.split("_")[0]
     return name.rstrip("abc") if name[0] in "xy" else name
 
 

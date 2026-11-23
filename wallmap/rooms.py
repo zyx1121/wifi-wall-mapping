@@ -172,10 +172,13 @@ def _draw(mask, seg: Segment, x0, y0, res):
             mask[i, j] = True
 
 
-def _draw_line(mask, seg: Segment, x0, y0, res, span: float = 50.0):
-    """Draw the whole line through seg, clipped to the grid."""
-    m = (seg.a + seg.b) / 2
-    _draw(mask, Segment(m - span * seg.t, m + span * seg.t), x0, y0, res)
+def _draw_line(mask, seg: Segment, x0, y0, res, extend: float | None = None):
+    """Draw the line through seg, clipped to the grid: all of it, or seg plus `extend` metres at each end."""
+    if extend is None:
+        m = (seg.a + seg.b) / 2
+        _draw(mask, Segment(m - 50.0 * seg.t, m + 50.0 * seg.t), x0, y0, res)
+    else:
+        _draw(mask, Segment(seg.a - extend * seg.t, seg.b + extend * seg.t), x0, y0, res)
 
 
 def close_rooms(
@@ -186,6 +189,7 @@ def close_rooms(
     near: float = 1.5,
     min_area: float = 1.0,
     min_visits: int = 3,
+    extend: float | None = None,
 ) -> RoomMap:
     """Cell complex: every wall line cuts the plane, then cells merge again.
 
@@ -194,6 +198,10 @@ def close_rooms(
     shorter than the true wall, so its line, not its seen extent, decides
     the corners. Cells the walk never steps between stay apart: the person
     went around, so a wall is likely there.
+
+    extend=None cuts along whole lines, which suits a small plan with
+    long walls. A real plan has many short walls, and whole lines cut its
+    rooms into pieces: there, extend each wall by `extend` metres instead.
     """
     segs = fused if fused and isinstance(fused[0], Segment) else from_fused(fused)  # type: ignore[arg-type]
     segs = bridge(snap(segs))
@@ -207,7 +215,7 @@ def close_rooms(
     line = np.zeros(shape, bool)
     seen = np.zeros(shape, bool)
     for s in segs:
-        _draw_line(line, s, lo[0], lo[1], res)
+        _draw_line(line, s, lo[0], lo[1], res, extend)
         _draw(seen, s, lo[0], lo[1], res)
     line = ndimage.binary_dilation(line, structure=cross)
     seen = ndimage.binary_dilation(seen, structure=cross, iterations=2)
@@ -337,9 +345,20 @@ def _closed_walls(rm: RoomMap, segs: list[Segment], lo, hi, side: float = 0.3, d
 
 
 def _box_mask(rm: RoomMap, box) -> np.ndarray:
-    _, x0, y0, x1, y1 = box
+    """Cells inside a true room: (name, x0, y0, x1, y1) or (name, polygon)."""
     xs = rm.x0 + (np.arange(rm.labels.shape[0]) + 0.5) * rm.res
     ys = rm.y0 + (np.arange(rm.labels.shape[1]) + 0.5) * rm.res
+    if len(box) == 2:
+        from matplotlib.path import Path as MPath
+
+        gx, gy = np.meshgrid(xs, ys, indexing="ij")
+        pts = np.c_[gx.ravel(), gy.ravel()]
+        polys = box[1] if isinstance(box[1], list) else [box[1]]
+        inside = np.zeros(len(pts), bool)
+        for g in polys:
+            inside |= MPath(np.asarray(g, float)).contains_points(pts)
+        return inside.reshape(gx.shape)
+    _, x0, y0, x1, y1 = box
     return ((xs[:, None] > x0) & (xs[:, None] < x1)) & ((ys[None, :] > y0) & (ys[None, :] < y1))
 
 

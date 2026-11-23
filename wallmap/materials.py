@@ -64,11 +64,16 @@ def _slab(layers: tuple[tuple[str, float], ...], f_hz: float, cos_i: float) -> t
     return complex(b / a), complex(1 / a)
 
 
-def coefficients(wall: str, f_hz: float, cos_i: float) -> tuple[complex, complex]:
-    """TE reflection and transmission of a wall type at cos(incidence angle)."""
-    return _slab(WALLS[wall], float(f_hz), round(float(abs(cos_i)), 3))
+def coefficients(wall, f_hz: float, cos_i: float) -> tuple[complex, complex]:
+    """TE reflection and transmission of a wall type at cos(incidence angle).
+
+    wall: a WALLS key, or a tuple of (material, thickness) layers.
+    """
+    layers = WALLS[wall] if isinstance(wall, str) else tuple(wall)
+    # a path along the wall (cos 0) divides by 0 in eq. 41b
+    return _slab(layers, float(f_hz), max(round(float(abs(cos_i)), 3), 1e-3))
 
 
-def loss_db(wall: str, f_hz: float, cos_i: float = 1.0) -> float:
+def loss_db(wall, f_hz: float, cos_i: float = 1.0) -> float:
     """Transmission loss in dB (positive)."""
     return float(-20 * np.log10(abs(coefficients(wall, f_hz, cos_i)[1])))
