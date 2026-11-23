@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import config from "@/task.config.json"
-import { HEAT_MAX, HEAT_MIN, METHODS, drawFrame, heatColor, score, snapAt, type Layer, type Walk } from "./walk"
+import { HEAT_MAX, HEAT_MIN, drawFrame, heatColor, score, snapAt, type Layer, type Walk } from "./walk"
 
 const LAYERS: { id: Layer; name: string }[] = [
   { id: "walls", name: "牆面" },
@@ -20,8 +20,6 @@ const SPEED = 6 // positions per second (0.3 m apart)
 export default function App() {
   const lang = "zh-TW" as const
   const [walk, setWalk] = useState<Walk | null>(null)
-  const [method, setMethod] = useState("music")
-  const [bw, setBw] = useState("320")
   const [layer, setLayer] = useState<Layer>("walls")
   const [playing, setPlaying] = useState(true)
   const [n, setN] = useState(1)
@@ -32,7 +30,7 @@ export default function App() {
     fetch("./wall-mapping-assets/walk.json").then(r => r.json()).then(setWalk)
   }, [])
 
-  const run = walk?.runs[method]?.[bw]
+  const run = walk?.run
   const total = walk?.positions.length ?? 1
 
   // one render loop: advances the playhead while playing, redraws every frame
@@ -66,19 +64,9 @@ export default function App() {
       ) : (
         <section aria-label="工作區" className="flex min-h-0 flex-1 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-            <Tabs value={method} onValueChange={v => setMethod(String(v))}>
-              <TabsList aria-label="方法" className="h-auto flex-wrap">
-                {METHODS.map(m => <TabsTrigger key={m.id} value={m.id}>{m.name}</TabsTrigger>)}
-              </TabsList>
-            </Tabs>
             <Tabs value={layer} onValueChange={v => setLayer(v as Layer)}>
               <TabsList aria-label="圖層">
                 {LAYERS.map(l => <TabsTrigger key={l.id} value={l.id}>{l.name}</TabsTrigger>)}
-              </TabsList>
-            </Tabs>
-            <Tabs value={bw} onValueChange={v => setBw(String(v))}>
-              <TabsList aria-label="頻寬">
-                {walk.bws.map(b => <TabsTrigger key={b} value={String(b)}>{b} MHz</TabsTrigger>)}
               </TabsList>
             </Tabs>
           </div>
@@ -114,7 +102,7 @@ export default function App() {
                 <span className="flex items-center gap-2"><span className="inline-block h-1 w-4 bg-[#ef4f4f]" />假牆 {s.falses} 面</span>
               </>
             )}
-            {layer === "rooms" && <span>分出 {snap?.rooms_ok ?? 0} / 5 間房</span>}
+            {layer === "rooms" && <span>分出 {snap?.rooms_ok ?? 0} / {walk.plan.rooms_true} 間房</span>}
             {layer === "heat" && (
               <>
                 <span className="flex items-center gap-2">{HEAT_MIN}<span className="inline-block h-2 w-20" style={{ background: GRADIENT }} />{HEAT_MAX} dBm</span>
