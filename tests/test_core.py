@@ -78,3 +78,39 @@ def test_rooms_from_true_walls():
     assert s["door_recall"] == 1.0
     # without walls the walk alone gives 1 region
     assert close_rooms([], pos).n_rooms == 1
+
+
+def test_wall_materials_match_measurements():
+    """P.2040 slabs land near measured losses and never gain energy."""
+    from wallmap.materials import WALLS, _slab, coefficients, loss_db
+
+    def slab_db(layers, f):
+        return -20 * np.log10(abs(_slab(layers, f, 1.0)[1]))
+
+    # Lott and Forkel, 5.2 GHz: 10 cm concrete 16 dB, 20 cm 29 dB
+    assert abs(slab_db((("concrete", 0.10),), 5.2e9) - 16) < 4
+    assert abs(slab_db((("concrete", 0.20),), 5.2e9) - 29) < 4
+    # NYU, 6.75 GHz: plasterboard stud wall 2.1 to 3.0 dB
+    assert abs(loss_db("drywall", 6.75e9) - 2.55) < 1.5
+    # air is transparent
+    r, t = _slab((("air", 0.1),), 6e9, 0.7)
+    assert abs(r) < 1e-9 and abs(abs(t) - 1) < 1e-9
+    for w in WALLS:
+        for c in (1.0, 0.7, 0.3, 0.05):
+            r, t = coefficients(w, 6.425e9, c)
+            assert abs(r) ** 2 + abs(t) ** 2 <= 1 + 1e-9
+
+
+def test_wall_loss_fit_recovers_losses():
+    """The robust fit finds the offset and per-wall losses despite outliers."""
+    from wallmap.attenuation import false_lines, fit_losses
+
+    rng = np.random.default_rng(0)
+    a = (rng.random((200, 3)) < 0.3).astype(float)
+    true = np.array([4.0, 15.0, 0.0])
+    e = -3.0 + a @ true + 0.5 * rng.standard_normal(200)
+    e[:10] -= 12  # wrong direct paths
+    c, loss, count = fit_losses(e, a)
+    assert abs(c + 3.0) < 0.5
+    assert np.all(np.abs(loss - true) < 0.7)
+    assert false_lines(loss, count) == [2]

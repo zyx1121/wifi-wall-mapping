@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from .geometry import Wall
+from .materials import coefficients
 
 
 @dataclass
@@ -30,9 +31,30 @@ class FloorPlan:
     boxes: list[tuple[str, float, float, float, float]] = field(default_factory=list)
     doors: list[tuple[float, float]] = field(default_factory=list)
     waypoints: list[tuple[float, float]] = field(default_factory=list)
+    # wall type (materials.WALLS) per line id; None keeps gamma_wall and transmission
+    materials: dict[str, str] | None = None
+    # transmission loss in dB per line id, used when materials is None (missing ids use transmission)
+    losses: dict[str, float] | None = None
 
     def walls(self) -> list[Wall]:
         return [Wall(n, np.array(a, float), np.array(b, float), self.gamma_wall) for n, a, b in self.segments]
+
+    def reflect(self, wall: Wall, cos_i: float, fc: float) -> complex:
+        if self.materials is None:
+            return complex(wall.gamma)
+        return coefficients(self.materials[line_id(wall.name)], fc, cos_i)[0]
+
+    def transmit(self, wall: Wall, cos_i: float, fc: float) -> complex:
+        if self.materials is None:
+            if self.losses and line_id(wall.name) in self.losses:
+                return complex(10 ** (-self.losses[line_id(wall.name)] / 20))
+            return complex(self.transmission)
+        return coefficients(self.materials[line_id(wall.name)], fc, cos_i)[1]
+
+    def with_materials(self, materials: dict[str, str]) -> "FloorPlan":
+        from dataclasses import replace
+
+        return replace(self, materials=materials)
 
 
 def apartment() -> FloorPlan:
@@ -62,6 +84,13 @@ def apartment() -> FloorPlan:
     boxes = [("客廳", 0, 0, 6, 5), ("廚房", 6, 0, 10, 3.5), ("臥室", 6, 3.5, 10, 8), ("臥室", 0, 5, 4.5, 8), ("浴室", 4.5, 5, 6, 8)]
     doors = [(3.65, 5), (5.3, 5), (6, 4.25)]
     return FloorPlan(s, 10.0, 8.0, rooms=rooms, boxes=boxes, doors=doors, waypoints=WAYPOINTS)
+
+
+# wall types per line id: concrete outside, brick around bedroom 1 and the bathroom, drywall elsewhere
+MATERIALS_A = {"south": "concrete", "east": "concrete", "north": "concrete", "west": "concrete", "y5": "brick", "x4.5": "brick", "x6": "drywall", "y3.5": "drywall"}
+MATERIALS_B = {"south": "concrete", "east": "concrete", "north": "concrete", "west": "concrete", "y4.5": "brick", "x3.2": "brick", "x5.5": "drywall", "y2.8": "drywall"}
+# the same plan with 10 cm concrete in place of brick
+MATERIALS_B_RC = {**MATERIALS_B, "y4.5": "rc10", "x3.2": "rc10"}
 
 
 def apartment_b() -> FloorPlan:

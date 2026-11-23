@@ -1,0 +1,16 @@
+[
+ {
+  "plan": "B",
+  "pred": "nomp walls, fitted loss",
+  "median_abs_db": 1.136304239700337,
+  "p90_abs_db": 4.717125643926549,
+  "bias_db": -1.0638085848662295
+ },
+ {
+  "plan": "B-rc",
+  "pred": "nomp walls, fitted loss",
+  "median_abs_db": 1.723473189528164,
+  "p90_abs_db": 5.404626035954181,
+  "bias_db": -1.319789753169735
+ }
+]

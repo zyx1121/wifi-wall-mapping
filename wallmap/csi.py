@@ -48,7 +48,10 @@ def synth_csi(
     if snr_db is None:
         return h, 0.0
     p_sig = float(np.mean(np.abs(h) ** 2))
-    s2 = p_sig / 10 ** (snr_db / 10)
+    if snr_1m_db is None:
+        s2 = p_sig / 10 ** (snr_db / 10)
+    else:
+        s2 = (ap.wavelength / (4 * np.pi)) ** 2 / 10 ** (snr_1m_db / 10)
     noise = np.sqrt(s2 / 2) * (rng.standard_normal(h.shape) + 1j * rng.standard_normal(h.shape))
     return h + noise, s2
 
@@ -127,14 +130,23 @@ def measure(
     snr_db: float,
     rng: np.random.Generator,
     imp: Impairments | None = None,
+    snr_1m_db: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray, float]:
-    """One packet: CSI, tone offsets and noise power (before AGC)."""
+    """One packet: CSI, tone offsets and noise power (before AGC).
+
+    By default the noise sits snr_db below this link's own signal. With
+    snr_1m_db the noise floor is fixed instead: a free-space link of 1 m
+    has that SNR, so walls and distance lower the SNR of a link.
+    """
     n_k = tone_offsets(bw_mhz)
     imp = imp or Impairments()
     h, _ = synth_csi(paths, ap, n_k, None, rng)
     h = impair_hardware(h, n_k, imp, rng)
     p_sig = float(np.mean(np.abs(h) ** 2))
-    s2 = p_sig / 10 ** (snr_db / 10)
+    if snr_1m_db is None:
+        s2 = p_sig / 10 ** (snr_db / 10)
+    else:
+        s2 = (ap.wavelength / (4 * np.pi)) ** 2 / 10 ** (snr_1m_db / 10)
     y = h + np.sqrt(s2 / 2) * (rng.standard_normal(h.shape) + 1j * rng.standard_normal(h.shape))
     y2 = impair_receiver(y, n_k, imp, rng)
     # the receiver knows its noise floor in the same units as the report

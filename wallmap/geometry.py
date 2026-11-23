@@ -118,9 +118,8 @@ def _seg_intersect(q: np.ndarray, target: np.ndarray, wall: Wall, tol: float = 1
     return q + t * d
 
 
-def _crossings(ap_pos, client, seq, img, walls, by_name) -> int:
-    """Interior walls that the path crosses without reflecting on them."""
-    # rebuild the bounce points from the AP side
+def _bounces(ap_pos, client, seq, by_name) -> list[np.ndarray]:
+    """Points of the path from the AP: AP, bounce points, client."""
     pts = [ap_pos]
     q = ap_pos
     imgs = [client]
@@ -131,7 +130,27 @@ def _crossings(ap_pos, client, seq, img, walls, by_name) -> int:
         pts.append(hit)
         q = hit
     pts.append(client)
-    count = 0
+    return pts
+
+
+def _cos_inc(direction: np.ndarray, wall: Wall) -> float:
+    return abs(float(np.dot(direction, wall.normal))) / float(np.linalg.norm(direction))
+
+
+def _path_gain(room, ap_pos, client, seq, walls, by_name, fc) -> complex:
+    """Wall reflections times the transmission of every wall the legs cross.
+
+    A room with reflect() and transmit() sets both per wall and angle. A
+    plain Room has a fixed reflection and no transmission.
+    """
+    if not hasattr(room, "reflect"):
+        return complex(np.prod([by_name[n].gamma for n in seq])) if seq else 1.0 + 0j
+    pts = _bounces(ap_pos, client, seq, by_name)
+    g = 1.0 + 0j
+    # pts[k] -> pts[k+1]; bounce k (k >= 1) is on wall seq[len(seq) - k]
+    for k in range(1, len(pts) - 1):
+        w = by_name[seq[len(seq) - k]]
+        g *= room.reflect(w, _cos_inc(pts[k] - pts[k - 1], w), fc)
     for k in range(len(pts) - 1):
         a, b = pts[k], pts[k + 1]
         skip = set()
@@ -140,11 +159,9 @@ def _crossings(ap_pos, client, seq, img, walls, by_name) -> int:
         if k < len(pts) - 2:
             skip.add(seq[len(seq) - 1 - k])
         for w in walls:
-            if w.name in skip:
-                continue
-            if _seg_intersect(a, b, w) is not None:
-                count += 1
-    return count
+            if w.name not in skip and _seg_intersect(a, b, w) is not None:
+                g *= room.transmit(w, _cos_inc(b - a, w), fc)
+    return g
 
 
 def image_paths(
@@ -198,12 +215,9 @@ def image_paths(
     if floor_ceiling:
         verticals += [("floor", -hc, room.gamma_floor), ("ceiling", 2 * room.height - hc, room.gamma_ceiling)]
 
-    tr = getattr(room, "transmission", None)
     paths = []
     for img, seq in valid:
-        g2d = np.prod([by_name[n].gamma for n in seq]) if seq else 1.0
-        if tr is not None:
-            g2d *= tr ** _crossings(ap.pos, client, seq, img, walls, by_name)
+        g2d = _path_gain(room, ap.pos, client, seq, walls, by_name, ap.fc)
         if floor_ceiling and len(seq) >= max_order:
             vlist = verticals[:1]
         else:
