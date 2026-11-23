@@ -118,6 +118,35 @@ def _seg_intersect(q: np.ndarray, target: np.ndarray, wall: Wall, tol: float = 1
     return q + t * d
 
 
+def _crossings(ap_pos, client, seq, img, walls, by_name) -> int:
+    """Interior walls that the path crosses without reflecting on them."""
+    # rebuild the bounce points from the AP side
+    pts = [ap_pos]
+    q = ap_pos
+    imgs = [client]
+    for n in seq:
+        imgs.append(by_name[n].mirror(imgs[-1]))
+    for i in range(len(seq) - 1, -1, -1):
+        hit = _seg_intersect(q, imgs[i + 1], by_name[seq[i]])
+        pts.append(hit)
+        q = hit
+    pts.append(client)
+    count = 0
+    for k in range(len(pts) - 1):
+        a, b = pts[k], pts[k + 1]
+        skip = set()
+        if k > 0:
+            skip.add(seq[len(seq) - k])
+        if k < len(pts) - 2:
+            skip.add(seq[len(seq) - 1 - k])
+        for w in walls:
+            if w.name in skip:
+                continue
+            if _seg_intersect(a, b, w) is not None:
+                count += 1
+    return count
+
+
 def image_paths(
     room: Room,
     ap: Array,
@@ -169,9 +198,12 @@ def image_paths(
     if floor_ceiling:
         verticals += [("floor", -hc, room.gamma_floor), ("ceiling", 2 * room.height - hc, room.gamma_ceiling)]
 
+    tr = getattr(room, "transmission", None)
     paths = []
     for img, seq in valid:
         g2d = np.prod([by_name[n].gamma for n in seq]) if seq else 1.0
+        if tr is not None:
+            g2d *= tr ** _crossings(ap.pos, client, seq, img, walls, by_name)
         if floor_ceiling and len(seq) >= max_order:
             vlist = verticals[:1]
         else:

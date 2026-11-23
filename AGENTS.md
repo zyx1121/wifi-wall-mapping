@@ -30,9 +30,11 @@ Rules for coding agents that change this repo. Facts about the project are in th
 
 ## Web demo
 
-- `demo/` is a React and Vite page from the task-web starter. It plays the search steps that `experiments/demo_trace.py` exports.
-- The estimators take an optional `trace` list. Keep it optional: the experiments do not pass it.
-- Build on the sandbox: run `uv run python demo_trace.py` in `experiments/`, then `npm ci && npm run build` in `demo/`.
+- `demo/` is a React and Vite page from the task-web starter. It plays the walk that `experiments/demo_walk.py` exports.
+- `wallmap/floorplan.py` holds the apartment (10 m by 8 m, 5 rooms, door gaps) and the walk (179 positions). Each interior wall that a path crosses multiplies the amplitude by 0.4.
+- `fuse_walk` in `wallmap/fusion.py` fuses the walk. A wall needs 8 links, 1 m of spread in client distance and a support test. The spread test removes the false walls that a straight walk between parallel walls makes.
+- We tuned the fusion parameters on this same walk. Do not report the demo numbers as a held-out result.
+- Build on the sandbox: run `uv run python demo_walk.py` in `experiments/` (about 4 minutes), then `npm ci && npm run build` in `demo/`. The JSON goes to `demo/public/wall-mapping-assets/`, which git and the sync script ignore.
 - Run `npm run audit -- <url>` before you deploy.
 - Deploy: rename `dist/index.html` to `wall-mapping.html`, then rsync it and `dist/wall-mapping-assets/` to `dev-demo:dev-demo/public/`. The page is at https://dev.zyx.tw/wall-mapping.
 
