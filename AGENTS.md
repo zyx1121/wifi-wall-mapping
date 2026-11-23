@@ -48,4 +48,4 @@ Rules for coding agents that change this repo. Facts about the project are in th
 uv run pytest -q
 ```
 
-All 13 tests must pass. For an estimator change, also run `experiments/stage2.py 20` and compare the reference row (160 MHz, 4 antennas, 30 dB) against `results/stage2/stage2.json`.
+All 14 tests must pass. For an estimator change, also run `experiments/stage2.py 20` and compare the reference row (160 MHz, 4 antennas, 30 dB) against `results/stage2/stage2.json`.

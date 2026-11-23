@@ -158,3 +158,38 @@ def test_ekf_beats_ftm_alone():
     e_ftm = np.median(np.linalg.norm(alone - true, axis=1))
     assert e_ekf < 0.2
     assert e_ekf < 0.7 * e_ftm
+
+
+def test_swiss_apartment_from_rows():
+    """2 rooms, an inner wall with a door, a window: walls cut at openings, a route through both rooms."""
+    from wallmap.floorplan import walk
+    from wallmap.swiss import ap_sites, build, in_front, materials, waypoints
+
+    def rect(x0, y0, x1, y1):
+        return f"POLYGON (({x0} {y0}, {x1} {y0}, {x1} {y1}, {x0} {y1}, {x0} {y0}))"
+
+    rows = [
+        {"entity_type": "separator", "entity_subtype": "WALL", "geometry": rect(-0.2, -0.2, 8.2, 0)},
+        {"entity_type": "separator", "entity_subtype": "WALL", "geometry": rect(-0.2, 4, 8.2, 4.2)},
+        {"entity_type": "separator", "entity_subtype": "WALL", "geometry": rect(-0.2, 0, 0, 4)},
+        {"entity_type": "separator", "entity_subtype": "WALL", "geometry": rect(8, 0, 8.2, 4)},
+        {"entity_type": "separator", "entity_subtype": "WALL", "geometry": rect(3.95, 0, 4.05, 4)},
+        {"entity_type": "opening", "entity_subtype": "DOOR", "geometry": rect(3.95, 1.5, 4.05, 2.4)},
+        {"entity_type": "opening", "entity_subtype": "WINDOW", "geometry": rect(1, -0.2, 2.5, 0)},
+        {"entity_type": "area", "entity_subtype": "LIVING_ROOM", "geometry": rect(0, 0, 3.95, 4)},
+        {"entity_type": "area", "entity_subtype": "BEDROOM", "geometry": rect(4.05, 0, 8, 4)},
+    ]
+    apt = build(rows)
+    kinds = sorted(apt.kind.values())
+    assert kinds.count("window") == 1 and "door" not in kinds
+    inner = [n for n in apt.kind if n not in apt.outer]
+    assert len(inner) == 2  # the inner wall, cut in 2 at the door
+    mats = materials(apt, "swiss")
+    assert all(m[0][0] == "plasterboard" for n, m in mats.items() if n in inner)
+    pos = walk(waypoints=waypoints(apt), seed=0)
+    assert len(apt.plan.boxes) == 2  # a wall with a door keeps 2 rooms
+    for _, g in apt.rooms:
+        lo, hi = g.min(axis=0), g.max(axis=0)
+        assert np.any(np.all((pos > lo) & (pos < hi), axis=1))  # the route enters both rooms
+    sites = ap_sites(apt, pos)
+    assert len(sites) >= 1 and all(in_front(st, pos).mean() >= 0.8 for st in sites)
