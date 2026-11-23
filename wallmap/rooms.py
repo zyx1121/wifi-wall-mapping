@@ -28,6 +28,7 @@ class Segment:
     a: np.ndarray
     b: np.ndarray
     size: int = 1
+    line: int = -1  # index of the wall line a closed piece belongs to
 
     @property
     def t(self) -> np.ndarray:
@@ -48,6 +49,7 @@ class RoomMap:
     walls: list[Segment]
     doors: list[np.ndarray] = field(default_factory=list)
     removed: list[Segment] = field(default_factory=list)
+    closed: list[Segment] = field(default_factory=list)  # wall pieces that bound the rooms, door gaps cut
 
     @property
     def n_rooms(self) -> int:
@@ -132,28 +134,32 @@ def _cross(p, q, s: Segment, ext: float = 0.0):
     return float(v * np.linalg.norm(e) - ext)
 
 
-def doors_and_ghosts(segs: list[Segment], walk: np.ndarray, gap: float = 1.0, max_spread: float = 1.2):
-    """Split walk crossings into doors, and drop walls the walk passes through along their length."""
+def _groups(s: Segment, walk: np.ndarray, ext: float, gap: float) -> list[list[float]]:
+    xs = sorted(v for p, q in zip(walk[:-1], walk[1:]) if (v := _cross(p, q, s, ext)) is not None)
+    groups: list[list[float]] = []
+    for v in xs:
+        if groups and v - groups[-1][-1] < gap:
+            groups[-1].append(v)
+        else:
+            groups.append([v])
+    return groups
+
+
+def doors_and_ghosts(segs: list[Segment], walk: np.ndarray, gap: float = 1.0, max_spread: float = 1.2, ext: float = 30.0):
+    """Drop walls the walk passes through along their seen length, and find doors.
+
+    A door is a tight group of crossings anywhere on the wall line: the
+    true wall often reaches past its seen extent.
+    """
     keep, removed, doors = [], [], []
     for s in segs:
-        xs = []
-        for p, q in zip(walk[:-1], walk[1:]):
-            v = _cross(p, q, s)
-            if v is not None:
-                xs.append(v)
-        xs.sort()
-        groups: list[list[float]] = []
-        for v in xs:
-            if groups and v - groups[-1][-1] < gap:
-                groups[-1].append(v)
-            else:
-                groups.append([v])
-        if any(g[-1] - g[0] > max_spread for g in groups):
+        if any(g[-1] - g[0] > max_spread for g in _groups(s, walk, 0.0, gap)):
             removed.append(s)
             continue
         keep.append(s)
-        for g in groups:
-            doors.append(s.a + s.t * float(np.mean(g)))
+        for g in _groups(s, walk, ext, gap):
+            if g[-1] - g[0] <= max_spread:
+                doors.append(s.a + s.t * float(np.mean(g)))
     return keep, removed, doors
 
 
@@ -267,7 +273,64 @@ def close_rooms(
         grown = ndimage.grey_dilation(labels, footprint=cross)
         fill = (labels == 0) & line & (grown > 0)
         labels[fill] = grown[fill]
-    return RoomMap(float(lo[0]), float(lo[1]), res, labels, segs, doors, removed)
+    rm = RoomMap(float(lo[0]), float(lo[1]), res, labels, segs, doors, removed)
+    rm.closed, rm.doors = _closed_walls(rm, segs, lo, hi)
+    return rm
+
+
+def _label_at(rm: RoomMap, p) -> int:
+    i, j = rm.cell(p)
+    if 0 <= i < rm.labels.shape[0] and 0 <= j < rm.labels.shape[1]:
+        return int(rm.labels[i, j])
+    return 0
+
+
+def _closed_walls(rm: RoomMap, segs: list[Segment], lo, hi, side: float = 0.3, door: float = 0.9):
+    """Pieces of the wall lines between crossings that separate 2 regions.
+
+    Returns the pieces with door gaps cut, and the doors that cut a piece.
+    """
+    out = []
+    used: list[np.ndarray] = []
+    for li, s in enumerate(segs):
+        m = (s.a + s.b) / 2
+        nrm = np.array([-s.t[1], s.t[0]])
+        # where the line enters and leaves the grid
+        g_lo, g_hi = -np.inf, np.inf
+        for k in range(2):
+            if abs(s.t[k]) < 1e-9:
+                continue
+            g0, g1 = sorted(((lo[k] - m[k]) / s.t[k], (hi[k] - m[k]) / s.t[k]))
+            g_lo, g_hi = max(g_lo, g0), min(g_hi, g1)
+        cuts = [g_lo, g_hi]
+        for o in segs:
+            if o is s or abs(float(np.dot(s.t, o.t))) > 0.5:
+                continue
+            g, _ = np.linalg.solve(np.array([s.t, -o.t]).T, o.a - m)
+            if g_lo < g < g_hi:
+                cuts.append(float(g))
+        cuts.sort()
+        for g0, g1 in zip(cuts[:-1], cuts[1:]):
+            c = m + (g0 + g1) / 2 * s.t
+            if _label_at(rm, c + side * nrm) == _label_at(rm, c - side * nrm):
+                continue
+            pieces = [(g0, g1)]
+            for d in rm.doors:
+                if abs(float(np.dot(d - m, nrm))) > 0.3:
+                    continue
+                v = float(np.dot(d - m, s.t))
+                nxt = []
+                for x0, x1 in pieces:
+                    if x0 < v < x1:
+                        nxt += [(x0, v - door / 2), (v + door / 2, x1)]
+                        used.append(d)
+                    else:
+                        nxt.append((x0, x1))
+                pieces = nxt
+            for x0, x1 in pieces:
+                if x1 - x0 > 0.05:
+                    out.append(Segment(m + x0 * s.t, m + x1 * s.t, s.size, li))
+    return out, used
 
 
 # ---------------------------------------------------------------- scoring

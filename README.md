@@ -21,6 +21,8 @@ A home AP sees each wall as an echo of the client. This repo measures how close 
 - **Add hardware errors**: random packet phase, timing offset, antenna phase, AGC, 8-bit quantization and RF chain ripple.
 - **Fuse client positions**: cluster candidate walls, test consistency and solve the unknown LoS length.
 - **Close rooms**: cut the plane with the wall lines, then merge the cells that the walk connects.
+- **Model wall materials**: reflection and transmission of layered walls from ITU-R P.2040.
+- **Fit wall loss**: the direct-path amplitude gives the loss of each found wall and a radio map.
 
 ## Results
 
@@ -34,6 +36,8 @@ The reference setup is 160 MHz, 4 antennas and 30 dB.
 | 3 | Which hardware error hurts? | Antenna phase most. Without calibration, MUSIC finds 8% of walls instead of 71%. RF chain ripple lowers MUSIC to 52%. |
 | 4 | Does fusion remove false walls? | Yes, with NOMP and known LoS length: 0.1 false walls per map at 100 positions. An unknown LoS length leaves 1.4. |
 | 5 | Do the walls close into rooms? | Partly. On the held-out apartment, MUSIC at 160 MHz gives 3 of 5 rooms (mean IoU 0.40). The true walls give 5 of 5 (0.95). |
+| 6 | Do real wall materials break it? | NOMP holds: 3 of 5 rooms, 5 of 7 walls. MUSIC takes a reflection as the direct path on 27% of links and drops to 1 room. |
+| 7 | What does direct-path loss add? | The loss of each wall: 10 cm concrete fits 14.7 to 15.3 dB (true 15.6). With these losses the radio map error behind walls is 1.1 dB (median). |
 
 Stage 3 at the reference setup, median wall error (m) and detection rate:
 
@@ -68,6 +72,17 @@ Stage 5 on apartment B (held out, 3 walks, known LoS length, ideal hardware). A 
 
 The AP sees few reflections from walls between 2 far rooms. Here those walls are the bedroom and bathroom wall and the kitchen and bedroom wall, so each pair of rooms becomes 1 room. A false wall near the AP splits the living room.
 
+Stages 6 and 7 use walls from ITU-R P.2040. Plan `B` has 15 cm concrete outside and 12 cm brick and drywall inside. Plan `B-rc` has 10 cm concrete in place of the brick. The noise floor stays the same for every link, so walls lower the SNR. Radio map error in the rooms behind walls, NOMP at 160 MHz, median and p90 (dB):
+
+| Prediction | B | B-rc |
+|------------|---|------|
+| free space | 1.7, 4.5 | 2.4, 10.8 |
+| true walls, 5 dB each (TGax) | 2.0, 5.2 | 3.1, 6.8 |
+| found walls, 5 dB each | 2.8, 7.1 | 2.5, 7.1 |
+| found walls, fitted loss | 1.1, 4.7 | 1.7, 5.4 |
+
+The fit reads the direct path at the known LoS length. The power rule of `relative_params` takes a reflection when a wall weakens the direct path, and then the concrete fits only 7 dB. Drywall fits 3.6 to 5.7 dB against 1.8 dB at normal incidence: most links cross it at a steep angle. The loss test removes the false wall near the AP, but the room count stays the same.
+
 ## Reproduce
 
 ```sh
@@ -78,9 +93,11 @@ uv run python stage2.py 100
 uv run python stage3.py 100
 uv run python stage4.py 12
 uv run python stage5.py
+uv run python stage6.py
+uv run python stage7.py
 ```
 
-Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes, stage 3 takes 15 minutes stage 4 takes 28 minutes and stage 5 takes 7 minutes.
+Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes and stage 3 takes 15 minutes. Stage 4 takes 28 minutes, stage 5 takes 7 minutes and stage 6 takes 15 minutes. Stage 7 reuses the links of stage 6.
 
 ## How it works
 

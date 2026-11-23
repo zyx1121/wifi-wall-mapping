@@ -1,0 +1,1076 @@
+[
+ {
+  "plan": "A",
+  "seed": 0,
+  "est": "nomp",
+  "before": {
+   "mean_iou": 0.35803478702169744,
+   "rooms_ok": 2,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 0.75,
+   "false_walls": 6
+  },
+  "after": {
+   "mean_iou": 0.23199626881588936,
+   "rooms_ok": 1,
+   "rooms_true": 5,
+   "rooms_found": 2,
+   "door_recall": 0.6666666666666666,
+   "door_precision": 1.0,
+   "false_walls": 5
+  },
+  "dropped": [
+   "false"
+  ],
+  "offset_db": 0.053430523226655514,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 24.751679547509582,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 3.6179319615630656,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "east",
+    "fit_db": 3.000000000000016,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y5",
+    "fit_db": 4.223723053116906,
+    "links": 32,
+    "true_db": 3.9799793773913557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": "x6",
+    "fit_db": 3.8436235227915145e-11,
+    "links": 6,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "A",
+  "seed": 0,
+  "est": "music",
+  "before": {
+   "mean_iou": 0.5720843028626201,
+   "rooms_ok": 4,
+   "rooms_true": 5,
+   "rooms_found": 4,
+   "door_recall": 1.0,
+   "door_precision": 0.6,
+   "false_walls": 5
+  },
+  "after": {
+   "mean_iou": 0.5730740357760759,
+   "rooms_ok": 4,
+   "rooms_true": 5,
+   "rooms_found": 4,
+   "door_recall": 1.0,
+   "door_precision": 0.6666666666666666,
+   "false_walls": 5
+  },
+  "dropped": [],
+  "offset_db": -0.03730739315136993,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 4.957569906903773,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 18.814969875758777,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "east",
+    "fit_db": 2.9999999999999925,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y5",
+    "fit_db": 4.077030594198288,
+    "links": 34,
+    "true_db": 3.9799793773913557
+   },
+   {
+    "line": "x6",
+    "fit_db": 4.6758969739193805,
+    "links": 26,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B",
+  "seed": 7000,
+  "est": "nomp",
+  "before": {
+   "mean_iou": 0.40522682139310645,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 4,
+   "door_recall": 1.0,
+   "door_precision": 0.8333333333333334,
+   "false_walls": 5
+  },
+  "after": {
+   "mean_iou": 0.4146479465372567,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 4
+  },
+  "dropped": [
+   "false"
+  ],
+  "offset_db": -0.08103485991282415,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 2.917286029168058,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 11.800333424614589,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 3.5240827435163333,
+    "links": 24,
+    "true_db": 3.9799793773913557
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 4.010694319281401,
+    "links": 31,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B",
+  "seed": 7000,
+  "est": "music",
+  "before": {
+   "mean_iou": 0.41342045589750753,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 2
+  },
+  "after": {
+   "mean_iou": 0.41346932924026747,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 2
+  },
+  "dropped": [],
+  "offset_db": -0.02514651310176511,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 0.24308274369618754,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 5.641987256961382,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 5.187764686316994,
+    "links": 34,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 3.8491574376217,
+    "links": 23,
+    "true_db": 3.9799793773913557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B",
+  "seed": 7001,
+  "est": "nomp",
+  "before": {
+   "mean_iou": 0.39861643289086074,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 5
+  },
+  "after": {
+   "mean_iou": 0.4035590108144495,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 5
+  },
+  "dropped": [],
+  "offset_db": 0.27505449828173,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 6.4938366781198695,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 3.3248706343137813,
+    "links": 23,
+    "true_db": 3.9799793773913557
+   },
+   {
+    "line": "north",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 3.8203881694084267,
+    "links": 32,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": "west",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B",
+  "seed": 7001,
+  "est": "music",
+  "before": {
+   "mean_iou": 0.05795931045193353,
+   "rooms_ok": 0,
+   "rooms_true": 5,
+   "rooms_found": 1,
+   "door_recall": 0.0,
+   "door_precision": 0.0,
+   "false_walls": 3
+  },
+  "after": {
+   "mean_iou": 0.07226522564626844,
+   "rooms_ok": 0,
+   "rooms_true": 5,
+   "rooms_found": 1,
+   "door_recall": 0.0,
+   "door_precision": 0.0,
+   "false_walls": 2
+  },
+  "dropped": [
+   "false"
+  ],
+  "offset_db": 1.244486875364893,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 3.9799793773913557
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B",
+  "seed": 7002,
+  "est": "nomp",
+  "before": {
+   "mean_iou": 0.4067582110301692,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 3
+  },
+  "after": {
+   "mean_iou": 0.4058182407574583,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 3
+  },
+  "dropped": [],
+  "offset_db": 0.43225078128590255,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 8.033579633091446,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 2.5195529793163383,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 2.6116054177923953,
+    "links": 23,
+    "true_db": 3.9799793773913557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 4.536554299722379,
+    "links": 33,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B",
+  "seed": 7002,
+  "est": "music",
+  "before": {
+   "mean_iou": 0.07071602115192224,
+   "rooms_ok": 0,
+   "rooms_true": 5,
+   "rooms_found": 1,
+   "door_recall": 0.0,
+   "door_precision": 0.0,
+   "false_walls": 1
+  },
+  "after": {
+   "mean_iou": 0.07088825214899713,
+   "rooms_ok": 0,
+   "rooms_true": 5,
+   "rooms_found": 1,
+   "door_recall": 0.0,
+   "door_precision": 0.0,
+   "false_walls": 1
+  },
+  "dropped": [],
+  "offset_db": 1.8297419351873923,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 3.9799793773913557
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B-rc",
+  "seed": 7000,
+  "est": "nomp",
+  "before": {
+   "mean_iou": 0.6266212139278153,
+   "rooms_ok": 4,
+   "rooms_true": 5,
+   "rooms_found": 4,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 2
+  },
+  "after": {
+   "mean_iou": 0.6280040355085812,
+   "rooms_ok": 4,
+   "rooms_true": 5,
+   "rooms_found": 4,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 2
+  },
+  "dropped": [],
+  "offset_db": -0.04520878114314408,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 0.9955733996056892,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 7.645553105641648,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 15.31842858297791,
+    "links": 25,
+    "true_db": 15.556851435950785
+   },
+   {
+    "line": "east",
+    "fit_db": 2.999999999999982,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": null,
+    "fit_db": 2.9999999999999996,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 4.53787032961105,
+    "links": 31,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": "y2.8",
+    "fit_db": 1.206070096562901e-14,
+    "links": 7,
+    "true_db": 1.7823336335191557
+   }
+  ]
+ },
+ {
+  "plan": "B-rc",
+  "seed": 7000,
+  "est": "music",
+  "before": {
+   "mean_iou": 0.42033530810270897,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 3
+  },
+  "after": {
+   "mean_iou": 0.4275979770364443,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 3
+  },
+  "dropped": [],
+  "offset_db": 0.11073424035627438,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 13.58794532051676,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 16.61522197808621,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 4.4682735224008265,
+    "links": 35,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 15.609391339455863,
+    "links": 23,
+    "true_db": 15.556851435950785
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B-rc",
+  "seed": 7001,
+  "est": "nomp",
+  "before": {
+   "mean_iou": 0.4074819709115026,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 3
+  },
+  "after": {
+   "mean_iou": 0.407634966380135,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 3
+  },
+  "dropped": [],
+  "offset_db": 0.2959505917496873,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 7.808961015160436,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 14.900067972160352,
+    "links": 20,
+    "true_db": 15.556851435950785
+   },
+   {
+    "line": "north",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 3.6209298834186394,
+    "links": 30,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B-rc",
+  "seed": 7001,
+  "est": "music",
+  "before": {
+   "mean_iou": 0.42618808202305425,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 2
+  },
+  "after": {
+   "mean_iou": 0.42618808202305425,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 2
+  },
+  "dropped": [],
+  "offset_db": 0.16582403609154164,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 9.217961300694569,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 7.326155318003005,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 3.922842264082905,
+    "links": 34,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 15.278676879760186,
+    "links": 23,
+    "true_db": 15.556851435950785
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ },
+ {
+  "plan": "B-rc",
+  "seed": 7002,
+  "est": "nomp",
+  "before": {
+   "mean_iou": 0.4124280319950399,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 4
+  },
+  "after": {
+   "mean_iou": 0.4117989631588431,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 4
+  },
+  "dropped": [],
+  "offset_db": 0.3263923310694906,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 1.4079416036271297,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 14.723599100721891,
+    "links": 24,
+    "true_db": 15.556851435950785
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0000000000000004,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 5.715793772898314,
+    "links": 33,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": "east",
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": 22.651563938411662
+   }
+  ]
+ },
+ {
+  "plan": "B-rc",
+  "seed": 7002,
+  "est": "music",
+  "before": {
+   "mean_iou": 0.4218280365493233,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 2
+  },
+  "after": {
+   "mean_iou": 0.42263229312751543,
+   "rooms_ok": 3,
+   "rooms_true": 5,
+   "rooms_found": 3,
+   "door_recall": 1.0,
+   "door_precision": 1.0,
+   "false_walls": 2
+  },
+  "dropped": [],
+  "offset_db": 0.7238239689904764,
+  "walls": [
+   {
+    "line": "west",
+    "fit_db": 6.374115126230009,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "north",
+    "fit_db": 7.888225162472404,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "east",
+    "fit_db": 3.000000000000002,
+    "links": 0,
+    "true_db": 22.651563938411662
+   },
+   {
+    "line": "y4.5",
+    "fit_db": 14.726455125048833,
+    "links": 25,
+    "true_db": 15.556851435950785
+   },
+   {
+    "line": "x5.5",
+    "fit_db": 3.8287095344375155,
+    "links": 36,
+    "true_db": 1.7823336335191557
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   },
+   {
+    "line": null,
+    "fit_db": 3.0,
+    "links": 0,
+    "true_db": null
+   }
+  ]
+ }
+]

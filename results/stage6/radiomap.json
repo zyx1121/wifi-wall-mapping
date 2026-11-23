@@ -1,0 +1,114 @@
+[
+ {
+  "plan": "B",
+  "pred": "free",
+  "same room": {
+   "median_abs_db": 1.3072369827744694,
+   "p90_abs_db": 2.190866045824176,
+   "bias_db": -1.4018781162812615
+  },
+  "other rooms": {
+   "median_abs_db": 1.7253749379038794,
+   "p90_abs_db": 4.477908773278037,
+   "bias_db": 0.6992850589962943
+  }
+ },
+ {
+  "plan": "B",
+  "pred": "true walls",
+  "same room": {
+   "median_abs_db": 0.4734888028365596,
+   "p90_abs_db": 1.2755626878322452,
+   "bias_db": -0.6107130446542602
+  },
+  "other rooms": {
+   "median_abs_db": 1.9821615896309908,
+   "p90_abs_db": 5.2279587983046785,
+   "bias_db": -2.2702814586188413
+  }
+ },
+ {
+  "plan": "B",
+  "pred": "music walls",
+  "same room": {
+   "median_abs_db": 1.2711334517965724,
+   "p90_abs_db": 6.106155050316537,
+   "bias_db": -2.4032515494708773
+  },
+  "other rooms": {
+   "median_abs_db": 2.2274702081002005,
+   "p90_abs_db": 5.730435349528952,
+   "bias_db": -1.1108514591963534
+  }
+ },
+ {
+  "plan": "B",
+  "pred": "nomp walls",
+  "same room": {
+   "median_abs_db": 1.1464188591956486,
+   "p90_abs_db": 5.9352455977077305,
+   "bias_db": -2.3052607200840747
+  },
+  "other rooms": {
+   "median_abs_db": 2.766499053405987,
+   "p90_abs_db": 7.051657191697416,
+   "bias_db": -3.239678132395367
+  }
+ },
+ {
+  "plan": "B-rc",
+  "pred": "free",
+  "same room": {
+   "median_abs_db": 1.3273449791676306,
+   "p90_abs_db": 2.273643938265405,
+   "bias_db": -1.4513961261008064
+  },
+  "other rooms": {
+   "median_abs_db": 2.352011921747504,
+   "p90_abs_db": 10.806879289917743,
+   "bias_db": 2.980000241443051
+  }
+ },
+ {
+  "plan": "B-rc",
+  "pred": "true walls",
+  "same room": {
+   "median_abs_db": 0.5107815146812946,
+   "p90_abs_db": 1.3026657078621966,
+   "bias_db": -0.6602310544738049
+  },
+  "other rooms": {
+   "median_abs_db": 3.080494328604189,
+   "p90_abs_db": 6.76068906027001,
+   "bias_db": 0.010433723827915535
+  }
+ },
+ {
+  "plan": "B-rc",
+  "pred": "music walls",
+  "same room": {
+   "median_abs_db": 0.9708157022852788,
+   "p90_abs_db": 1.7745386338165396,
+   "bias_db": -1.111371859514076
+  },
+  "other rooms": {
+   "median_abs_db": 2.3604309320483168,
+   "p90_abs_db": 6.832092319661544,
+   "bias_db": 0.4320901869368203
+  }
+ },
+ {
+  "plan": "B-rc",
+  "pred": "nomp walls",
+  "same room": {
+   "median_abs_db": 0.9751814655191531,
+   "p90_abs_db": 1.781873615716497,
+   "bias_db": -1.1174174316157202
+  },
+  "other rooms": {
+   "median_abs_db": 2.4648128614745985,
+   "p90_abs_db": 7.0504364803840645,
+   "bias_db": 0.23815059695299512
+  }
+ }
+]
