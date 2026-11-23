@@ -114,3 +114,25 @@ def test_wall_loss_fit_recovers_losses():
     assert abs(c + 3.0) < 0.5
     assert np.all(np.abs(loss - true) < 0.7)
     assert false_lines(loss, count) == [2]
+
+
+def test_ekf_beats_ftm_alone():
+    """PDR plus angle and FTM tracks a walk better than FTM alone, start heading unknown."""
+    from wallmap.floorplan import apartment_b, walk
+    from wallmap.pdr import ImuNoise, simulate, track
+
+    plan = apartment_b()
+    ap = np.array([2.5, 0.1])
+    true = walk(seed=7000, jitter=0.0, waypoints=plan.waypoints)
+    rng = np.random.default_rng(1)
+    lengths, headings, _ = simulate(true, ImuNoise(), rng)
+    v = true - ap
+    r = np.linalg.norm(v, axis=1)
+    cos_m = v[:, 0] / r + 0.01 * rng.standard_normal(len(r))
+    ftm = r + 0.3 * rng.standard_normal(len(r))
+    est = track(ap, lengths, headings, cos_m, ftm)
+    alone = ap + ftm[:, None] * np.stack([cos_m, np.sqrt(1 - np.clip(cos_m, -1, 1) ** 2)], axis=1)
+    e_ekf = np.median(np.linalg.norm(est - true, axis=1))
+    e_ftm = np.median(np.linalg.norm(alone - true, axis=1))
+    assert e_ekf < 0.2
+    assert e_ekf < 0.7 * e_ftm

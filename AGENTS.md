@@ -25,7 +25,7 @@ Rules for coding agents that change this repo. Facts about the project are in th
 ## Conventions
 
 - Geometry is 2D. The AP sits on the south wall at `y = 0.1` with a uniform linear array along x. The array measures only `cos(phi)`, so there is a front/back ambiguity. The mount wall is not a target.
-- Wi-Fi gives delay relative to the LoS path, not absolute time of flight. The LoS length `d0` comes from the truth, from FTM, or from `fusion.hough_d0`.
+- Wi-Fi gives delay relative to the LoS path, not absolute time of flight. The LoS length `d0` comes from the truth, from FTM, from `fusion.hough_d0`, or from the EKF track of `wallmap/pdr.py`.
 - A wall error is the distance between the estimated line and the midpoint of the true wall, along the estimated normal. A match needs 0.5 m and 10 degrees.
 - Results go to `results/<stage>/` as JSON and PNG. Git ignores `results/raw/`. Stages 5 and 6 cache their links there: remove the cache after you change the channel or an estimator.
 - `FloorPlan.materials` switches on P.2040 walls (`wallmap/materials.py`). Without it a plan keeps the fixed reflection and the 0.4 transmission of the demo. `measure(..., snr_1m_db=...)` fixes the noise floor instead of the SNR.
@@ -46,4 +46,4 @@ Rules for coding agents that change this repo. Facts about the project are in th
 uv run pytest -q
 ```
 
-All 11 tests must pass. For an estimator change, also run `experiments/stage2.py 20` and compare the reference row (160 MHz, 4 antennas, 30 dB) against `results/stage2/stage2.json`.
+All 12 tests must pass. For an estimator change, also run `experiments/stage2.py 20` and compare the reference row (160 MHz, 4 antennas, 30 dB) against `results/stage2/stage2.json`.
