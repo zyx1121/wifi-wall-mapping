@@ -1,0 +1,20 @@
+/*
+ * What a Vite project adds around the ui.zyx.tw base: Tailwind itself, the
+ * dark variant and fonts served from this project. zyx-theme.css holds the
+ * tokens and is generated; edit neither file to restyle a component.
+ */
+@import "tailwindcss";
+@import "@fontsource-variable/noto-sans-jp";
+@import "@fontsource-variable/noto-sans-tc";
+@import "@fontsource-variable/geist-mono";
+@import "./fonts.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* The base names its fonts by variable; next/font sets these in Next.js. */
+:root {
+  --font-inter: "Inter";
+  --font-noto-sans-jp: "Noto Sans JP Variable";
+  --font-noto-sans-tc: "Noto Sans TC Variable";
+  --font-geist-mono: "Geist Mono Variable";
+}

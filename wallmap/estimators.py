@@ -97,7 +97,7 @@ def _peaks(p2: np.ndarray, k: int, size=(3, 5)) -> list[tuple[int, int]]:
 # ---------------------------------------------------------------- IFFT
 
 
-def est_ifft(y, n_k, s2, fc, k_max=20, k_fixed=None) -> Paths:
+def est_ifft(y, n_k, s2, fc, k_max=20, k_fixed=None, trace=None) -> Paths:
     m, n = y.shape
     w = np.hanning(n + 2)[1:-1]
     f, sg, tg = fft_map(y, n_k, w)
@@ -107,6 +107,9 @@ def est_ifft(y, n_k, s2, fc, k_max=20, k_fixed=None) -> Paths:
     s = np.array([sg[i] for i, _ in pk])
     tau = np.array([tg[j] for _, j in pk])
     amp = ls_amplitudes(y, s, tau, n_k, fc)
+    if trace is not None:
+        trace.append({"kind": "map", "map": p2, "s": sg, "tau": tg, "gate": gate})
+        trace.append({"kind": "peaks", "map": p2, "s": sg, "tau": tg, "gate": gate, "picked": list(zip(s, tau))})
     return Paths(s, tau, amp, 1 / DF)
 
 
@@ -156,7 +159,7 @@ def _newton_single(y, s, tau, n_k, fc, iters=6):
     return s, t_ns * 1e-9
 
 
-def _greedy(y, n_k, s2, fc, k_max, refine: bool, cyclic_rounds=1, k_fixed=None) -> Paths:
+def _greedy(y, n_k, s2, fc, k_max, refine: bool, cyclic_rounds=1, k_fixed=None, trace=None) -> Paths:
     m, n = y.shape
     s_l: list[float] = []
     t_l: list[float] = []
@@ -167,10 +170,15 @@ def _greedy(y, n_k, s2, fc, k_max, refine: bool, cyclic_rounds=1, k_fixed=None) 
         p2 = np.abs(f) ** 2
         i, j = np.unravel_index(np.argmax(p2), p2.shape)
         if p2[i, j] < gate:
+            if trace is not None:
+                trace.append({"kind": "stop", "map": p2, "s": sg, "tau": tg, "gate": gate, "found": list(zip(s_l, t_l))})
             break
-        s_new, t_new = float(sg[i]), float(tg[j])
+        s_grid, t_grid = float(sg[i]), float(tg[j])
+        s_new, t_new = s_grid, t_grid
         if refine:
             s_new, t_new = _newton_single(res, s_new, t_new, n_k, fc)
+        if trace is not None:
+            trace.append({"kind": "pick", "map": p2, "s": sg, "tau": tg, "gate": gate, "found": list(zip(s_l, t_l)), "grid": (s_grid, t_grid), "refined": (s_new, t_new) if refine else None})
         s_l.append(s_new)
         t_l.append(t_new)
         if refine:
@@ -188,12 +196,12 @@ def _greedy(y, n_k, s2, fc, k_max, refine: bool, cyclic_rounds=1, k_fixed=None) 
     return Paths(s, t, ls_amplitudes(y, s, t, n_k, fc), 1 / DF)
 
 
-def est_omp(y, n_k, s2, fc, k_max=20, k_fixed=None) -> Paths:
-    return _greedy(y, n_k, s2, fc, k_max, refine=False, k_fixed=k_fixed)
+def est_omp(y, n_k, s2, fc, k_max=20, k_fixed=None, trace=None) -> Paths:
+    return _greedy(y, n_k, s2, fc, k_max, refine=False, k_fixed=k_fixed, trace=trace)
 
 
-def est_nomp(y, n_k, s2, fc, k_max=20, k_fixed=None) -> Paths:
-    return _greedy(y, n_k, s2, fc, k_max, refine=True, k_fixed=k_fixed)
+def est_nomp(y, n_k, s2, fc, k_max=20, k_fixed=None, trace=None) -> Paths:
+    return _greedy(y, n_k, s2, fc, k_max, refine=True, k_fixed=k_fixed, trace=trace)
 
 
 # ---------------------------------------------------------------- subspace
@@ -239,7 +247,7 @@ def _strongest_tau(y, n_k) -> float:
     return float(tg[np.unravel_index(np.argmax(np.abs(f)), f.shape)[1]])
 
 
-def est_music(y, n_k, s2, fc, k_max=20, k_fixed=None, n_s=401, dt_ns=0.25) -> Paths:
+def est_music(y, n_k, s2, fc, k_max=20, k_fixed=None, n_s=401, dt_ns=0.25, trace=None) -> Paths:
     m, _ = y.shape
     la = m if m <= 2 else m // 2 + 1
     d, lf = _smoothing_plan(n_k)
@@ -249,6 +257,8 @@ def est_music(y, n_k, s2, fc, k_max=20, k_fixed=None, n_s=401, dt_ns=0.25) -> Pa
     ev, evec = ev[::-1], evec[:, ::-1]
     k = k_fixed or _order(ev, s2, la * lf, x.shape[1], k_max)
     period = 1 / (d * DF)
+    if trace is not None:
+        trace.append({"kind": "eig", "ev": ev[:40], "thr": s2 * (1 + np.sqrt(la * lf / x.shape[1])) ** 2 * 2.0, "k": k})
     if k == 0:
         return Paths(np.zeros(0), np.zeros(0), np.zeros(0, complex), period)
     es = evec[:, :k].reshape(la, lf, k)
@@ -267,10 +277,13 @@ def est_music(y, n_k, s2, fc, k_max=20, k_fixed=None, n_s=401, dt_ns=0.25) -> Pa
     t = np.array([tg[j] for _, j in pk])
     amp = ls_amplitudes(y, s, t, n_k, fc)
     keep = np.abs(amp) ** 2 * y.size > (0 if k_fixed else GAMMA_DETECT * s2)
+    if trace is not None:
+        trace.append({"kind": "spectrum", "map": pm, "s": sg, "tau": tg})
+        trace.append({"kind": "peaks", "map": pm, "s": sg, "tau": tg, "picked": list(zip(s[keep], t[keep])), "dropped": list(zip(s[~keep], t[~keep]))})
     return Paths(s[keep], t[keep], amp[keep], period)
 
 
-def est_mpencil(y, n_k, s2, fc, k_max=20, k_fixed=None) -> Paths:
+def est_mpencil(y, n_k, s2, fc, k_max=20, k_fixed=None, trace=None) -> Paths:
     m, _ = y.shape
     d, lf = _smoothing_plan(n_k)
     x = _snapshots(y, n_k, 1, lf, d)
@@ -279,6 +292,8 @@ def est_mpencil(y, n_k, s2, fc, k_max=20, k_fixed=None) -> Paths:
     ev, evec = ev[::-1], evec[:, ::-1]
     k = k_fixed or _order(ev, s2, lf, x.shape[1], k_max)
     period = 1 / (d * DF)
+    if trace is not None:
+        trace.append({"kind": "eig", "ev": ev[:40], "thr": s2 * (1 + np.sqrt(lf / x.shape[1])) ** 2 * 2.0, "k": k})
     if k == 0:
         return Paths(np.zeros(0), np.zeros(0), np.zeros(0, complex), period)
     es = evec[:, :k]
@@ -292,9 +307,13 @@ def est_mpencil(y, n_k, s2, fc, k_max=20, k_fixed=None) -> Paths:
     b, *_ = np.linalg.lstsq(e, y.T, rcond=None)  # (k, M)
     sg = np.linspace(-1, 1, 2001)
     steer = np.exp(1j * np.pi * _ctr(m)[None, :] * sg[:, None])  # (S, M)
-    s = sg[np.argmax(np.abs(steer.conj() @ b.T), axis=0)]
+    beams = np.abs(steer.conj() @ b.T)  # (S, k)
+    s = sg[np.argmax(beams, axis=0)]
     amp = ls_amplitudes(y, s, tau, n_k, fc)
     keep = np.abs(amp) ** 2 * y.size > (0 if k_fixed else GAMMA_DETECT * s2)
+    if trace is not None:
+        trace.append({"kind": "delays", "tau_lines": tau})
+        trace.append({"kind": "beams", "tau_lines": tau, "beams": beams, "s": sg, "picked": list(zip(s[keep], tau[keep])), "dropped": list(zip(s[~keep], tau[~keep]))})
     return Paths(s[keep], tau[keep], amp[keep], period)
 
 

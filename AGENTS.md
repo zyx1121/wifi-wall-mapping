@@ -28,6 +28,14 @@ Rules for coding agents that change this repo. Facts about the project are in th
 - A wall error is the distance between the estimated line and the midpoint of the true wall, along the estimated normal. A match needs 0.5 m and 10 degrees.
 - Results go to `results/<stage>/` as JSON and PNG. Git ignores `results/raw/`.
 
+## Web demo
+
+- `demo/` is a React and Vite page from the task-web starter. It plays the search steps that `experiments/demo_trace.py` exports.
+- The estimators take an optional `trace` list. Keep it optional: the experiments do not pass it.
+- Build on the sandbox: run `uv run python demo_trace.py` in `experiments/`, then `npm ci && npm run build` in `demo/`.
+- Run `npm run audit -- <url>` before you deploy.
+- Deploy: rename `dist/index.html` to `wall-mapping.html`, then rsync it and `dist/wall-mapping-assets/` to `dev-demo:dev-demo/public/`. The page is at https://dev.zyx.tw/wall-mapping.
+
 ## Verify
 
 ```sh
