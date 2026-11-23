@@ -62,3 +62,19 @@ def test_tone_counts():
     assert len(tone_offsets(80)) == 996
     assert len(tone_offsets(160)) == 1992
     assert len(tone_offsets(320)) == 3984
+
+
+def test_rooms_from_true_walls():
+    """The true walls of plan B close into its 5 rooms and 4 doors."""
+    from wallmap.floorplan import apartment_b, walk
+    from wallmap.rooms import Segment, close_rooms, score_rooms
+
+    plan = apartment_b()
+    pos = walk(waypoints=plan.waypoints)
+    rm = close_rooms([Segment(w.p0, w.p1, 10) for w in plan.walls()], pos)
+    s = score_rooms(rm, plan.boxes, plan.doors)
+    assert s["rooms_ok"] == 5 and s["rooms_found"] == 5
+    assert s["mean_iou"] > 0.9
+    assert s["door_recall"] == 1.0
+    # without walls the walk alone gives 1 region
+    assert close_rooms([], pos).n_rooms == 1
