@@ -33,10 +33,10 @@ Rules for coding agents that change this repo. Facts about the project are in th
 ## Web demo
 
 - `demo/` is a React and Vite page from the task-web starter. It plays the walk that `experiments/demo_walk.py` exports.
-- `wallmap/floorplan.py` holds the apartment (10 m by 8 m, 5 rooms, door gaps) and the walk (179 positions). The demo uses the P.2040 walls of `MATERIALS_A` and the fixed noise floor `snr_1m_db`.
+- The demo plays the held-out plan B (`apartment_b`, 9 m by 7.5 m, 5 rooms) with the P.2040 walls of `MATERIALS_B`. It uses the fixed noise floor `snr_1m_db` and draws each true wall at its real thickness.
 - `fuse_walk` in `wallmap/fusion.py` fuses the walk. A wall needs 8 links, 1 m of spread in client distance and a support test. The spread test removes the false walls that a straight walk between parallel walls makes.
-- Every 10 positions, `demo_walk.py` stores a snapshot. It holds the rooms from `close_rooms`, the closed walls, and a radio map from the found walls and their fitted losses. The page has 3 layers: walls, rooms and signal.
-- We tuned the fusion parameters on this same walk. Do not report the demo numbers as a held-out result.
+- Every 10 positions, `demo_walk.py` stores a snapshot. It drops the false walls by their loss (stage 7). The snapshot holds the rooms, the closed walls, and a radio map from the found walls and their fitted losses. The page has 3 layers: walls, rooms and signal.
+- `demo_walk.py` runs NOMP on the 3 walks of plan B at 160 and 320 MHz. It exports the run with the most rooms, so the page shows the best of 6 runs, not a typical one. Report the stage tables, not the demo.
 - Build on the sandbox: run `uv run python demo_walk.py` in `experiments/` (about 4 minutes), then `npm ci && npm run build` in `demo/`. The JSON goes to `demo/public/wall-mapping-assets/`, which git and the sync script ignore.
 - Run `npm run audit -- <url>` before you deploy.
 - Deploy: rename `dist/index.html` to `wall-mapping.html`, then rsync it and `dist/wall-mapping-assets/` to `dev-demo:dev-demo/public/`. The page is at https://dev.zyx.tw/wall-mapping.

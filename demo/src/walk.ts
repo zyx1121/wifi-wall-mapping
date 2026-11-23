@@ -9,6 +9,7 @@ export type Snap = {
   walls: [number, number, number, number][] // closed walls
   heat: number[] // predicted power per heat cell (dBm)
   heat_err: number // median error behind walls (dB)
+  iou: number
 }
 
 export type Run = {
@@ -23,13 +24,14 @@ type Grid = { x0: number; y0: number; cell: number; nx: number; ny: number }
 export type Layer = "walls" | "rooms" | "heat"
 
 export type Walk = {
-  plan: { width: number; depth: number; walls: [number, number, number, number][]; rooms: [string, number, number][] }
+  // walls: x0, y0, x1, y1, thickness (m), material
+  plan: { width: number; depth: number; walls: [number, number, number, number, number, string][]; rooms: [string, number, number][]; rooms_true: number }
   ap: [number, number]
   targets: string[]
   positions: [number, number][]
   truth: [number, number, number][][] // s, path length, order
-  bws: number[]
-  runs: Record<string, Record<string, Run>>
+  bw: number
+  run: Run
   rooms_grid: Grid
   heat_grid: Grid
   heat_truth: number[]
@@ -95,13 +97,7 @@ function gridImage(ctx: CanvasRenderingContext2D, g: Grid, color: (k: number) =>
   ctx.drawImage(raster, X(g.x0), Y(g.y0 + g.ny * g.cell), X(g.x0 + g.nx * g.cell) - X(g.x0), Y(g.y0) - Y(g.y0 + g.ny * g.cell))
 }
 
-export const METHODS = [
-  { id: "ifft", name: "IFFT" },
-  { id: "omp", name: "OMP" },
-  { id: "nomp", name: "NOMP" },
-  { id: "music", name: "MUSIC" },
-  { id: "mpencil", name: "Matrix Pencil" },
-] as const
+const WALL_ALPHA: Record<string, number> = { concrete: 0.8, rc10: 0.8, brick: 0.55, drywall: 0.3 }
 
 const C = { found: "#f5a524", hit: "#2fbf71", miss: "#ef4f4f" }
 
@@ -157,6 +153,11 @@ function drawPlan(ctx: CanvasRenderingContext2D, w: Walk, run: Run, t: number, n
   ctx.clip()
 
   const snap = layer === "walls" ? null : snapAt(run, n)
+  // rooms and signal only inside the house
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(X(0), Y(w.plan.depth), X(w.plan.width) - X(0), Y(0) - Y(w.plan.depth))
+  ctx.clip()
   if (snap && layer === "heat") {
     gridImage(ctx, w.heat_grid, i => [...heatColor(snap.heat[i]), 255], X, Y, true)
   }
@@ -164,17 +165,21 @@ function drawPlan(ctx: CanvasRenderingContext2D, w: Walk, run: Run, t: number, n
     const cells = roomCells(snap, w.rooms_grid)
     gridImage(ctx, w.rooms_grid, i => (cells[i] ? [...ROOM_COLORS[(cells[i] - 1) % ROOM_COLORS.length], 90] as [number, number, number, number] : [0, 0, 0, 0]), X, Y, false)
   }
+  ctx.restore()
 
-  // floor plan
-  ctx.lineCap = "round"
-  ctx.strokeStyle = k.faint
-  ctx.lineWidth = 6
-  for (const [a, b, c, d] of w.plan.walls) {
+  // floor plan: true walls at their real thickness, denser materials darker
+  ctx.lineCap = "square"
+  ctx.strokeStyle = k.muted
+  for (const [a, b, c, d, th, mat] of w.plan.walls) {
+    ctx.globalAlpha = WALL_ALPHA[mat] ?? 0.5
+    ctx.lineWidth = Math.max(2, th * sc)
     ctx.beginPath()
     ctx.moveTo(X(a), Y(b))
     ctx.lineTo(X(c), Y(d))
     ctx.stroke()
   }
+  ctx.globalAlpha = 1
+  ctx.lineCap = "round"
   ctx.font = FONT
   ctx.textAlign = "center"
   ctx.fillStyle = k.muted
