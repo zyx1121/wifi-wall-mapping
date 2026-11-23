@@ -219,3 +219,116 @@ def _fit_d0(ap_pos, links, walls, grid, sig_l, sig_phi_deg, cap) -> list[float]:
             cost += np.minimum(r.min(axis=1), cap)
         d0s.append(float(grid[np.argmin(cost)]))
     return d0s
+
+
+def fuse_walk(
+    ap_pos: np.ndarray,
+    links: list[Link],
+    d0s: list[float],
+    positions: np.ndarray,
+    eps: float = 0.4,
+    min_size: int = 8,
+    min_spread: float = 1.0,
+    min_support: float = 0.3,
+) -> list[dict]:
+    """Fuse the links of a walk. A wall is seen only from part of the walk.
+
+    A fraction rule (fuse) drops walls that only one room sees. Here a
+    cluster needs `min_size` links, and their distances to the wall must
+    differ by at least `min_spread` metres. A walk along a straight line sees
+    a fixed false wall from a second-order path between parallel walls: that
+    false wall moves with the distance of the client to it. A true wall does
+    not. The support test then predicts the first-order path off the wall
+    for every link whose specular point falls inside the seen extent, and
+    keeps the wall when at least `min_support` of them measured it.
+
+    Returns one dict per wall: theta, rho, size and the extent of its
+    reflection points along the wall, as two end points.
+    """
+    lines, owner, refl = [], [], []
+    for j, (lk, d0) in enumerate(zip(links, d0s)):
+        if len(lk.phis) == 0:
+            continue
+        pc = client_position(ap_pos, lk.phi0, d0)
+        for phi, dl in zip(lk.phis, lk.dls):
+            img = ap_pos + (d0 + dl) * np.array([np.cos(phi), np.sin(phi)])
+            v = img - pc
+            nv = np.linalg.norm(v)
+            if nv < 1e-6:
+                continue
+            n = v / nv
+            rho = float(np.dot((pc + img) / 2 - ap_pos, n))
+            if rho < 0:
+                n, rho = -n, -rho
+            # specular point: where the line from the AP to the image meets the wall
+            den = float(np.dot(img - ap_pos, n))
+            p = ap_pos + (rho / den) * (img - ap_pos) if abs(den) > 1e-9 else (pc + img) / 2
+            lines.append((float(np.arctan2(n[1], n[0])), rho))
+            owner.append(j)
+            refl.append(p)
+    if len(lines) < 2:
+        return []
+    lines = np.array(lines)
+    owner = np.array(owner)
+    refl = np.array(refl)
+    lab = fcluster(linkage(_foot(lines), method="average"), t=eps, criterion="distance")
+    out = []
+    for c in np.unique(lab):
+        idx = np.where(lab == c)[0]
+        who = np.unique(owner[idx])
+        if len(who) < min_size:
+            continue
+        th = float(np.arctan2(np.mean(np.sin(lines[idx, 0])), np.mean(np.cos(lines[idx, 0]))))
+        rho = float(np.median(lines[idx, 1]))
+        n = np.array([np.cos(th), np.sin(th)])
+        dist = (positions[who] - ap_pos) @ n
+        if np.ptp(dist) < min_spread:
+            continue
+        t = np.array([-n[1], n[0]])
+        along = (refl[idx] - ap_pos) @ t
+        lo, hi = np.percentile(along, [5, 95])
+        foot = ap_pos + rho * n
+        if min_support > 0:
+            # links whose specular point on this wall falls inside its seen extent
+            hit = tot = 0
+            for lk, d0 in zip(links, d0s):
+                if len(lk.phis) == 0:
+                    continue
+                pc = client_position(ap_pos, lk.phi0, d0)
+                img = mirror_line(pc, ap_pos, th, rho)
+                den = float(np.dot(img - ap_pos, n))
+                if den <= 1e-9:
+                    continue
+                sp = ap_pos + (rho / den) * (img - ap_pos)
+                a = float((sp - ap_pos) @ t)
+                if a < lo - 0.3 or a > hi + 0.3:
+                    continue
+                tot += 1
+                v = img - ap_pos
+                L = float(np.linalg.norm(v))
+                ph, dl = float(np.arccos(np.clip(v[0] / L, -1, 1))), L - d0
+                if np.any((np.abs(lk.phis - ph) < np.deg2rad(5)) & (np.abs(lk.dls - dl) < 0.5)):
+                    hit += 1
+            if tot == 0 or hit / tot < min_support:
+                continue
+        out.append({"theta": th, "rho": rho, "size": int(len(who)), "p0": foot + lo * t, "p1": foot + hi * t})
+    return _merge(out, ap_pos)
+
+
+def _merge(walls: list[dict], ap_pos: np.ndarray, ang_deg: float = 10.0, dist: float = 0.4) -> list[dict]:
+    """Merge walls that are the same line: one wall split into clusters."""
+    walls = sorted(walls, key=lambda w: -w["size"])
+    out: list[dict] = []
+    for w in walls:
+        for m in out:
+            if abs((w["theta"] - m["theta"] + np.pi) % (2 * np.pi) - np.pi) < np.deg2rad(ang_deg) and abs(w["rho"] - m["rho"]) < dist:
+                n = np.array([np.cos(m["theta"]), np.sin(m["theta"])])
+                t = np.array([-n[1], n[0]])
+                along = [float((p - ap_pos) @ t) for p in (m["p0"], m["p1"], w["p0"], w["p1"])]
+                foot = ap_pos + m["rho"] * n
+                m["p0"], m["p1"] = foot + min(along) * t, foot + max(along) * t
+                m["size"] += w["size"]
+                break
+        else:
+            out.append(dict(w))
+    return out

@@ -10,7 +10,7 @@
 
 Wall detection rate for one client position at 30 dB SNR (100 random positions per point). Antennas help as much as bandwidth: with MUSIC, 8 antennas at 80 MHz find more walls than 4 antennas at 160 MHz.
 
-Watch each estimator search, step by step: [dev.zyx.tw/wall-mapping](https://dev.zyx.tw/wall-mapping).
+Watch 1 AP map an apartment while a person walks through every room: [dev.zyx.tw/wall-mapping](https://dev.zyx.tw/wall-mapping).
 
 A home AP sees each wall as an echo of the client. This repo measures how close to the true wall position the AP gets, as a function of bandwidth, antenna count, estimator and hardware error.
 
@@ -65,7 +65,7 @@ uv run python stage3.py 100
 uv run python stage4.py 12
 ```
 
-Each script writes JSON and PNG files to `results/<stage>/`. `demo_trace.py` writes the steps that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes, stage 3 takes 15 minutes and stage 4 takes 28 minutes.
+Each script writes JSON and PNG files to `results/<stage>/`. `demo_walk.py` writes the walk that the web demo in `demo/` plays. On 8 CPU cores, stage 2 takes 29 minutes, stage 3 takes 15 minutes and stage 4 takes 28 minutes.
 
 ## How it works
 
