@@ -1,0 +1,10 @@
+[
+  {
+    "source": "https://ui.zyx.tw/r/base.json",
+    "sha256": "58563ac81585df9fdc88bd183c018179362b6c92bf0e8529f2208442c991b061"
+  },
+  {
+    "source": "https://ui.zyx.tw/r/corners.json",
+    "sha256": "28f19e78e4b6f2b2200e2db9b8e3e385f467349b195e959de7b943b629827d80"
+  }
+]
